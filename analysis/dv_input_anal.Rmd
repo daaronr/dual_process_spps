@@ -1,0 +1,702 @@
+# Code setup work {-}
+
+Sourcing functions base options
+
+```{r setup1, include=TRUE, warning=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, results = 'asis')
+
+options(scipen=100) #'penalizes' using scientific notation
+
+library(pacman)
+
+p_load(devtools) 
+
+here <- here::here
+
+tryCatch(
+  {source_url('https://raw.githubusercontent.com/daaronr/dr-rstuff/master/functions/functions.R')
+    source_url('https://raw.githubusercontent.com/daaronr/dr-rstuff/master/functions/baseoptions.R')
+},  error = function(e) {
+  print("you are not online, so we source locally instead; hope you've updated")
+  source(here("code", "functions.R")) # functions grabbed from web and created by us for analysis/output
+ source(here("code", "baseoptions.R")) # Basic options used across files and shortcut functions, e.g., 'pp()' for print
+}
+)
+
+sumnumopt <- setSummaries(numeric= c("centralValue" ,"quartiles", "minMax","countMissing"))
+
+st_options("round.digits",3)
+
+options(todor_rmd=TRUE)
+
+local({
+  r <- getOption("repos")
+  r["CRAN"] <- "http://cran.r-project.org"
+  options(repos = r)
+})
+
+library(ggsignif)
+
+```
+
+Assign names to folders and files
+
+```{r folder-file-names}
+
+data_folder <- here("data","dv_data")
+#note -- running this interactively seems to require one step down:  "../data/dv_data"... but the 'here' seems to solve it
+
+data_2018 <- "Stats-for-DV-Formula_TYVid_dr_editing.xlsx"
+data_2019 <- "stats-for-dv-formula_tyvid_2019_dr_editing.xlsx"
+
+```
+
+# Donor Voice: Documentation of Excel files sent to us
+
+These have been downloaded from email and stored in dualprocess/data/dv_data; or are only in Kiki's files.
+
+Full spreadsheet index of these, issues and key statistics: [data/dv_data/table_of_sheets_sent.xlsx](data/dv_data/table_of_sheets_sent.xlsx)
+
+## 2018 trial data
+<!-- Gmail search: `Kiki has:attachment xls|xlsx` --> 
+
+2018 test. Files in order in which they were received:
+
+1. `2019.01.17 TYEmailVideo_Results2`
+1. `2019.02.26 TYVideo Impact Test DV`
+1. `2019.02.26 TYVideo Impact Test DV2-no outlier`
+1. `Stats for DV Formula_TYVid` (23rd August)
+1. `2019.08.27 TYVideo Impact Test DV 2`
+
+### 17 January 2019 
+
+`TYEmailVideo_Results2.xlsx`: includes both 'direct gifts from email'; does not include the 9k gift because it had not happened yet (KK: first thing CRS sent us)
+
+Other gifts (not direct) "7 days after the person opened the email, gifts made through any channel" (seems surprisingly high) 
+
+<div class="marginnote">
+ 
+Q: check we interpret it correctly... it seems plausible but we want to know.
+
+Q: what date is this up to (when had CRS checked their database)?
+</div>
+
+\
+
+*Within this Excel file (TYEmailVideo_Results2.xlsx)** 
+
+- The first table is total as of XX date
+
+- Second table 'Direct Gifts from Email': we think this means people who clicked on email link and donated 
+
+- Third table is everything, broken down by donation range
+
+- Fourth table is everything, broken down by 'Form Name' ... but we are not sure what it means
+
+\
+
+### February 
+
+`2019.02.26 TYVideo Impact Test DV.xlsx`: Sent to Kiki, includes the 9k outlier; only included direct gifts
+
+*Note: this may be the same file as* `TYVideo Impact Test DV 2.xlsx`
+\
+
+### 15 March email from Kiki 
+
+`2019.02.26 TYVideo Impact Test DV2-no outlier.xlsx`:  Does not include the 9k outlier but otherwise has everything above (and no [in?]direct gifts)
+
+`unlinked-2019.02.26 TYVideo Impact Test DV2-no outlier.xlsx`: Stored version of the above, removing problematic linked personal data
+
+> Kiki: 'But I did manage to clear up what was happening with our test results. A donation of $9,000 was made in the control condition between the first set of data they sent me and the second. That’s what created all the confusion and discrepancies.'
+
+*Note*: The 'statistics' files only include direct-from-email donations.
+
+
+```{block2,  type='note'}
+
+**ISSUE:** `unlinked-2019.02.26 TYVideo Impact Test DV2-no outlier.xlsx` has a different breakdown of donations in ranges/treatments than `TYEmailVideo_Results2.xlsx` even among the 'email only' group; some have more and some have fewer:
+
+**Control conversions, bins (<50, 50-99, 100-499, 1000+):**
+
+`TYEmailVideo_Results2.xlsx` : 6, 9, 13, 3
+`unlinked-2019.02.26 TYVideo Impact Test DV2-no outlier.xlsx`: 4, 6, 13, 3 
+
+*If the data came later, than why are there fewer conversions here, and these are NOT in the outlier category?*
+
+\
+
+**Treated conversions, bins (<50, 50-99, 100-499, 500-999):**
+`TYEmailVideo_Results2.xlsx`: 19, 17, 25, 6  
+`unlinked-2019.02.26 TYVideo Impact Test DV2-no outlier.xlsx`: 26, 19, 21, 5
+
+*Here we have more conversions in some bins and fewer in other bins, and not only the 'outlier' bins
+
+\
+**Resolution**
+  
+> [Kiki]  No of conversions between the first and second file. Some are higher (which is normal since more donations came in) but some are lower. I remember talking to CRS about this and they said that some donations don’t go through and that could explain seeing fewer conversions at a later file.
+
+$\rightarrow$ So the later file is more trustworthy
+
+> [Kiki] Revenue for control condition between first and second file. It’s way higher in the second one. Looking closer at gift distributions, we found an outlier donation of 9k. Which led to the 3rd file sent to us without it.
+
+
+``` 
+\
+
+### 23 August 
+
+`Stats for DV Formula_TYVid.xlsx`: Requested statistics including ranks and sums of squares. Statistics clarifying individual donations and rankings. 
+
+`Stats for DV formulas_TY Video-ID-removed.xlsx`: As above, blanking out `Donor ID` column
+
+### 27 August 
+
+`2019.08.27 TYVideo Impact Test DV2.xlsx`: Updates `2019.02.26 TYVideo Impact Test DV2-no outlier` through August; but the only difference is 1000 more email opens and 1 click. ATM (20 Feb 2020) this is in Kiki's folder only.
+
+
+\
+
+## 2019 trial data
+
+16 Dec 2019 email
+"FW: thank you video a/b test" thread
+
+`tyvid-email-test-dv-2019.xlsx` renaming of `TYVid Email Test DV.xlsx` (removing links): Probably includes only direct donations from email, probably not censoring outliers.
+
+`Stats for DV formulas_TYVid DV.xlsx`:  Requested statistics including ranks
+
+`2019.12.06 TYVid Email Test DV.xlsx`: same content as "tyvid-email-test-dv-2019.xlsx" **This is the correct stat, Larissa confirms**
+
+
+
+#
+<div class="marginnote">
+Q: These two sheets do not agree; the latter has fewer conversions; 44 and 35 donations ... these may have been done on different days?
+
+Resolution: the larger number is correct; Larissa checked and found 85 donations.
+</div>
+ 
+## Table: excel sheets sent to us
+
+```{r table2, echo=FALSE, message=FALSE, warnings=FALSE, results='asis', include=TRUE}
+
+table_of_sheets  <- read_excel(here("data","dv_data","table_of_sheets_sent.xlsx"))
+  
+table_of_sheets  %>% 
+  dplyr::select(-notes, -notes_2, -`Key missing elements`) %>% 
+  kable() %>%
+  kable_styling("striped", full_width = F) #as.tibble just to remove row label
+
+table_of_sheets %>%
+  dplyr::select(filename, `Key missing elements`) %>%
+  kable(caption = "key missing elements") %>%
+  kable_styling("striped", full_width = F) #as.tibble just to remove row label
+
+
+table_of_sheets  %>% 
+  dplyr::select(filename, notes, notes_2) %>%
+  kable(caption = "Notes") %>%
+  kable_styling("striped", full_width = F) #as.tibble just to remove row label
+
+
+```
+
+## Inputting 'raw data sent to us', creating organised data files
+
+TODO
+
+## Hand work in excel
+
+`Stats-for-DV-Formula_TYVid_dr_editing.xlsx`
+
+`stats-for-dv-formula_tyvid_2019_dr_editing.xlsx`
+
+```{block2,  type='note'}
+TODO: re-construct data from original files using R, no Excel work
+
+```  
+
+# Donor's voice experiments: all input and description
+
+(Impact information experiments)
+
+## Input, clean, mutate
+
+Our charity partner gave us three types of summary statistics on the data:
+
+1. Basic statistics: counts of recipients (N), clicks/conversions, etc., and amount raised 
+
+2. Donation crosstabs, by donation ranges 
+
+3. Ranks of donations within each run/year
+
+
+...  *each classed or identified by run/year and treatment*
+
+\
+
+### Input basic statistics (sample sizes, outcome counts and totals)
+
+Create objects: Data input parameters, names of estimation objects 
+
+```{r}
+
+range_names <- list("2018"="moved_from...!R11:V41", "2019"="bins_data_input!A1:E31")
+
+range_names_ss <- list("2018"="TY-Video!H24:O26", "2019"="bins!A3:I5")
+
+data_filenames <- list("2018"=data_2018, "2019"=data_2019)
+
+```
+
+Actual input
+
+```{r input-base-stats}
+
+base_stats <- purrr::map2_dfr(data_filenames, range_names_ss, ~read_excel(file.path(data_folder, .x), range = .y,  col_types = "text"), .id='run') %>% 
+  mutate_at(vars(-matches("email|revenue")), as.numeric) %>% 
+          clean_names(case = c("snake"))  %>%
+          mutate(revenue = as.numeric(gsub('[$,]', '', revenue)), 
+           recipients = coalesce(count_overall, recipients)) %>%
+ mutate(
+    treatment= case_when(
+      stringr::str_detect(email,regex("impact", ignore_case = TRUE)) ~ "treat",
+      TRUE ~ "control"),
+    av_pos_gift= revenue/conversions,
+    rev_per_recip= revenue/recipients,
+    conv_per_recip = conversions/recipients,
+    conv_per_click = conversions/clicks,
+    add_zeroes = recipients - conversions,
+    run = as.character(run)
+    ) %>% 
+  dplyr::select(run, treatment, recipients, bounces, opens, clicks, conversions, av_pos_gift, conv_per_recip, conv_per_click, rev_per_recip, everything(), -avg_gift, -count_overall) %>% #note redundant variables are removed here 
+  arrange(run,treatment) %>%
+  setter::set_comment("2018-19 Summary statistics and totals (recip/open/click/conversion...) by treatment and year") 
+
+#TODO - CHECK: For 2018 -- Are these the relevant outcomes, or should we be focusing on the "moved_from...!R11:V41" data instead?
+
+#TODO: Can we get the 'modes other than email' values for this? Can they be imputed from the range-coded data?
+
+#TODO: We are missing the important sum of squares etc... to allow t-tests! It is in cel H of the 'stats' table, but that seems to be from a different (earlier?) cut of the data; we need this information from something with the 38+47=85 conversions (from email?)
+
+```
+
+### Aggregate 2018-19 for 'total' rows
+
+ <div class="marginnote">
+ 
+Note that I 'hard code in' the (partial) total revenue and number of gifts including indirect for 2018 only. This is from the sheet `TYEmailVideo_Results2.xlsx` which we do not use for anything else. This is not good practice but the data we were sent was so chaotic that I don't think this is consequential.
+
+Note that they only sent these figures including indirect donations on 17-Jan-19 and did not update it. I don't think it includes the outlier.
+
+</div>
+
+```{r}
+
+#for `treatments`
+base_stats <- base_stats %>%
+  group_by(treatment) %>%
+  summarise_at(c("recipients","bounces","opens","clicks","conversions","revenue","unsubs","add_zeroes"), sum) %>%
+mutate(
+    av_pos_gift= revenue/conversions,
+    rev_per_recip= revenue/recipients,
+    conv_per_recip = conversions/recipients,
+    conv_per_click = conversions/clicks,
+    run = "both"
+    )  %>% 
+  ungroup() %>%
+  bind_rows(base_stats) %>%
+  mutate(
+    conversions_including_indirect = case_when(
+      run==2018 & treatment== "control" ~ 241,
+      run==2018 & treatment== "treat" ~ 267
+    ),
+    rev_incl_indirect  = case_when(
+      run==2018 & treatment== "control" ~ 30931,
+      run==2018 & treatment== "treat" ~ 43448
+    )
+  )%>% 
+  dplyr::select(treatment, run, everything()) 
+
+  
+```
+
+### Set (and also get) names of key variables and objects to model, sample sizes {-}
+
+```{r}
+
+treatments <- c("control", "treat") #If we had crossed arms we would probably specify this as a list of character vectors\
+
+outcomes_all <- c("opens", "clicks", "bounces", "conversions", "unsubs", "rev_per_recip", "av_pos_gift", "revenue")
+outcomes <- c("opens", "clicks", "conversions", "rev_per_recip", "av_pos_gift" )
+
+#TODO: Add the 'donation mode' and sum of squares variables when I get these
+
+bin_outcomes = c("opens", "clicks", "conversions")
+cont_outcomes =c("rev_per_recip", "av_pos_gift")
+
+years <- c("2018", "2019")
+
+#splits <- list(years, mode) 
+
+samp_size <- matrix(data=base_stats$recipients, nrow=length(years), ncol = length(treatments), dimnames=list(treatments, years)) 
+
+samp_size_opens <- matrix(data=base_stats$opens, nrow=length(years), ncol = length(treatments), dimnames=list(treatments, years)) 
+  
+```
+
+### Input donation crosstabs (summary data we can analyse) {-}
+
+<!-- TODO: done for 2018, do for 2019-->
+
+```{r dv-input-cross, echo=FALSE, results='hide'}
+
+#map2_dfr creates a dataframe, mapping the 2 lists given, and somehow adding the id variable 'run' for the run year 
+dv_ranges <- purrr::map2_dfr(data_filenames, range_names, ~read_excel(file.path(data_folder, .x), range = .y), .id='run') %>% 
+  mutate(
+    range = ordered(range, levels = c("<$50", "$50-$99", "$100-$499", "$500-$999", "$1000+")),
+    mode = ordered(mode, levels = c("email-link", "not-email", "any" ))
+  ) %>% 
+  mutate(
+    treatment = case_when(
+      treatment=="treatment" ~ "treat",
+      TRUE ~ treatment)
+  ) %>% 
+  setter::set_comment("Donation stats in ranges by treatment, mode, year") 
+
+```
+
+### Input rank data
+
+```{r dv-input-ranks, echo=FALSE, results='hide'}
+
+#Inputs for both years:
+dv_ranks <-
+  purrr::map2_dfr(data_filenames, range_names_ss, ~read_excel(file.path(data_folder, .x),  sheet="ty_video_ranks"), .id='run') %>%
+  mutate(
+      treatment = case_when(
+      Treatment=="Control" ~ "control",
+      Treatment=="Test" ~ "treat",
+      TRUE ~ Treatment
+    ),
+    treatment = as.factor(treatment),
+  ) %>%
+  group_by(run) %>%  #ranks  *within* run, at least for now
+      mutate(
+        rev_rank = rank(-Rank),
+        max_rank = round(max(Rank)),
+        min_revrank = round(min(rev_rank))
+      ) %>%
+  rename(rank=Rank) %>%
+  select(-Treatment) %>%
+  setter::set_comment("Donation rank within each year, most to least, and reverse") 
+ 
+#TODO: add overall rank across years? Can we do it given the data provided? It may be fuzzy at best. 
+
+```
+
+### Add zero rows to allow easy ranksum tests 
+```{r zeroes, echo=FALSE, results='hide', warning=FALSE}
+
+for (h in treatments) {
+  for (i in 2018:2019) {
+    assign(glue('z_{h}_{i}'), 
+        dv_ranks %>%
+          filter(run=={i}) %>% 
+            slice(1) %>%
+          #start with the first row of ranks only
+          ungroup() %>%
+         mutate(
+           rank=max_rank+1, #assign highest rank+1 in other data (for all zeroes)
+           rev_rank=min_revrank-1, #reverse rank (here it seems to be 0)
+           treatment=as.factor({h}), #for control obs
+           run=as.character({i})
+         ) %>%
+         slice(rep(1:n(), each = base_stats$add_zeroes[base_stats$run=={i} & base_stats$treatment=={h}])) #repeat this for the number of controls less 1 less number of control donations
+    )
+  }
+}
+       
+dv_ranks_all <- as_tibble(bind_rows(dv_ranks, z_control_2018, z_treat_2018, z_control_2019, z_treat_2019)) %>% 
+  setter::set_comment("Donation rank within each year, most to least, and reverse, with non-donations (zeroes) added") 
+
+rm(list = ls(pattern = "^z_"))
+
+```
+
+
+## Description/depiction/codebook of (summary) data
+
+### Key data frames {-}
+  
+-  `base_stats`: `r attr(base_stats, 'comment')`
+
+- `dv_ranges`: `r attr(dv_ranges, 'comment')`
+  
+- `dv_ranks_all`: `r attr(dv_ranks_all, 'comment')`
+
+### Key summary statistics and graphs {-#keysumstats}
+
+```{r}
+
+big_stats_table <-  base_stats %>% 
+  as_tibble() %>%
+mutate (
+  conv_per_1k_recip = conv_per_recip*1000
+) %>% 
+  dplyr::select(run, treatment, recipients, bounces, opens, clicks, conversions, conv_per_1k_recip, conv_per_click, rev_per_recip, av_pos_gift, conversions_including_indirect, rev_incl_indirect, -email,-add_zeroes) %>% 
+  kable() %>%
+  kable_styling("striped", full_width = F) #as.tibble just to remove row label
+
+big_stats_table
+
+```
+
+
+Histogram of donation ranges by year treatment (and, for 2018, by response mode)
+
+```{r dv-histo, echo=FALSE, results='hide'}
+
+smalltext <- element_text(size = 7)
+
+(
+dv_hist_email_18_mode <- dv_ranges %>%
+  filter(run==2018) %>%
+  dplyr::arrange(desc(mode)) %>%
+  ggplot() + geom_col(aes(x=range, y=gifts, fill=treatment), position = position_dodge(width=.5), width=.5) + facet_grid(mode ~ .)  + theme(axis.text.x = smalltext) + labs(title="DV: Donation intervals by treatment, donation mode for 2018", subtitle = "2018 non-direct-mode data is an 'early report', not provided for 2019")
+)
+
+
+(
+dv_hist_email_stack <- dv_ranges %>%
+  filter(mode=="email-link" ) %>%
+  ggplot() +  geom_col(aes(x=range, y=gifts, color=treatment), position = position_stack(reverse = TRUE))  + facet_grid(. ~ run ~ treatment, margins=TRUE) + theme(axis.text.x = element_text(size=9, angle=90)) +labs(title="DV: Donation intervals by year, treatment", subtitle = "Direct email responses only.")
+)
+
+#TODO: do one for the sum across years 
+
+```
+
+
+
+### Key descriptives  {-}
+
+**Years (runs):**  `r years`
+
+**Treatments:** `r treatments`
+
+# Donor Voice: Questions and tests
+
+The tests below follow from the [questions asked](#prereg_qn) and [procedures proposed in our pregistration](#keyanal).
+
+<div class="marginnote">
+Prereg: "standard nonparametric statistical tests of the affect of this treatment on..."
+</div>
+
+
+<!--
+focus on **Fisher's exact test (for incidence)** and the **standard rank sum and t-tests for the donation amounts.** If the aforementioned results are not statistically significant at the p=0.05 level or better, we do not plan to include statistical controls nor to do any interactions/differentiation of our results. We will report confidence intervals on our estimates, and make inferences on reasonable bounds on our effect, even if it is a 'null effect'.
+-->
+
+
+## Key Q: Does including impact information affect the propensity to donate? {#key-binary}
+
+
+### Descriptives {-}
+
+```{r}
+
+base_stats %>% 
+  as_tibble() %>%
+mutate (
+  conv_per_1k_recip = conv_per_recip*1000
+) %>% 
+  dplyr::select(run, treatment, recipients, opens, clicks, conversions, conv_per_1k_recip, conv_per_click) %>% 
+  kable() %>%
+  kable_styling("striped", full_width = F) #as.tibble just to remove row label
+
+```
+
+
+### Hypothesis tests and inference: Fisher's exact test, confidence/credible intervals {-}
+
+<div class="marginnote">
+Prereg: "We will report confidence intervals on our estimates, and make inferences on reasonable bounds on our effect, even if it is a 'null effect'." $\rightarrow$ Focus on confidence intervals and ([TODO] Bayesian credible intervals).
+
+</div>
+
+
+<!-- TODO:  Add impact on 'donations over 100 USD', although this is not preregistered -->
+
+
+```{r fisher-dv, echo=FALSE, results='show'}
+
+# Note: code uses function `fisherme`, defined in functions.R
+
+# Apply this over... 
+
+## each run, and jointly; also (2018) for email-only vs all 
+subsets = c("2018", "2019", "both") # do this for 2019 and for aggregated
+
+# TODO: do for opens, conversions and donations over certain amounts
+#?also for 'all in 7 days' (recover that!)
+
+base_stats_m <- base_stats %>%
+  mutate(
+        rowname = paste(run, treatment, sep = "_")
+  ) %>%
+      column_to_rownames %>%
+  as.data.frame() 
+
+for (j in bin_outcomes) {
+  for (i in subsets) {
+    assign(glue('ft_{j}_{i}'),
+           fisherme(base_stats_m[glue("{i}_control"), "recipients"],     
+                    base_stats_m[glue("{i}_control"), {j}],
+                    base_stats_m[glue("{i}_treat"), "recipients"],     
+                    base_stats_m[glue("{i}_treat"), {j}]
+           )
+    )
+  }
+}
+
+#As above for the case that is only present for 2018; this is funny code, a loop for only 1 instance
+for (j in c("conversions_including_indirect")) {
+  for (i in c("2018")) {
+    assign(glue('ft_{j}_{i}'),
+           fisherme(base_stats_m[glue("{i}_control"), "recipients"],      base_stats_m[glue("{i}_control"), {j}], base_stats_m[glue("{i}_treat"), "recipients"],      base_stats_m[glue("{i}_treat"), {j}]
+           ) ) } }
+
+## Styling it
+ft_l <- list(ft_opens_2018, ft_opens_2019, ft_opens_both,
+             ft_clicks_2018, ft_clicks_2019, ft_clicks_both,
+             ft_conversions_2018, ft_conversions_including_indirect_2018, ft_conversions_2019, ft_conversions_both)
+
+ft_names <- c("Opens, 2018", "Opens, 2019", "Opens, both years",
+              "Clicks, 2018", "Clicks, 2019", "Clicks, both years",
+              "Conversions, 2018", "Conversions, 2018, including indirect", "Conversions, 2019", "Conversions, both years")
+
+ft_dv <- map2(ft_l, ft_names, function(x, y) {
+  broom::tidy(x) %>% add_column(Experiment = y, .before = 1)
+}) %>%
+  bind_rows() %>%
+  select(-method, -alternative) %>%
+  kable(, caption = "Fisher tests: impact info treatment (relative to baseline)", digits = 2) %>%
+  kable_styling()
+
+ft_dv
+
+# dv_d_don_gte_100 <-
+# matrix(c(91298-241-72-63, 241-72-63, 91296-267-69-67, 267-69-67),
+#        nrow = 2, dimnames = list(control = c("no", "yes"), treat = c("no", "yes")))
+# 
+# dv_d_don_open_gte_100 <-
+# matrix(c(16816-241-72-63, 241-72-63, 16105-267-69-67, 267-69-67),
+#        nrow = 2, dimnames = list(control = c("no", "yes"), treat = c("no", "yes")))
+# 
+# #(ft_dv_d_open <- fisherme())
+# (ft_dv_d_click <- fisherme(16816,412,16105,371))
+# (ft_dv_d_don_all <- fisherme(91298,26,91296,71))
+# (ft_dv_d_don_open <-  fisherme(16816,26,16105,71))
+# (ft_dv_d_don_7day <- fisherme(91298,241,91296,267))
+# (ft_dv_d_don_open_7day <- fisherme(16816,241,16105,267))
+# (ft_dv_don_gte100 <- fisherme(91298,241-72-63,91296,267-69-67))
+# (ft_dv_don_open_gte100 <- fisherme(16816,241-72-63,16105,267-69-67))
+
+```
+
+We do not conduct formal tests for conditional measures such as 'conversions per click', as the differential selection problem makes the causal interpretation problematic. 
+
+<div class="marginnote">
+We may consider bounds on these hurdle estimates... e.g., Lee bounds 
+</div>
+ 
+
+## Key Q: Does including impact information affect the amount raised? 
+
+<div class="marginnote">
+Prereg: "Average gift amount (including zeroes)"
+</div>
+
+### Descriptives {-}
+
+(Repeated from section: ['Key summary statistics and graphs](#keysumstats)
+
+```{r}
+dv_hist_email_stack
+```
+
+
+```{r}
+
+rev_stats_table <-  base_stats %>% 
+  as_tibble() %>%
+  mutate (
+    conv_per_1k_recip = conv_per_recip*1000
+  ) %>% 
+  dplyr::select(run, treatment, rev_per_recip, av_pos_gift) %>% 
+  kable() %>%
+  kable_styling("striped", full_width = F) #as.tibble just to remove row label
+
+rev_stats_table
+
+#TODO: other available measures (medians etc)
+```
+
+
+
+### Hypothesis tests and inference: Rank-sum and t-tests, confidence/credible intervals {-}
+
+<div class="marginnote">
+o
+We will focus on... the **standard rank sum and t-tests for the donation amounts.** 
+
+</div>
+ 
+<div class="marginnote">
+Prereg: "We will report confidence intervals on our estimates, and make inferences on reasonable bounds on our effect, even if it is a 'null effect'." $\rightarrow$ Focus on confidence intervals and (Bayesian) credible intervals.
+</div>
+
+## Secondary:  Email open rates 
+
+See preregistered ['secondary analyses'](#secondary-analyses)
+
+<!-- (although these shouldn't vary by treatment as we didn’t change the subject line) -->
+
+This was analysed above; see the table [here](#key-binary)
+
+Discussion...
+
+
+
+## Secondary:  Click-throughs
+
+- Click through (whether they clicked on a link: yes/no)
+- Number of click throughs (how many links they clicked on) (?what did this mean?)
+
+# Incorporate the below in
+
+
+## Rank sum tests (something was lost here?)
+
+```{r  something, echo=FALSE, results='hide', eval=FALSE, include=FALSE}
+
+dv_ranks_all_em %>% group_by(treatment) %>% summarise(mn = mean(rank))
+
+dv_ranks_pos %>% group_by(treatment) %>% summarise(mn = mean(rank))
+
+#dv_ranks %>
+#liftedWilcox(rev_rank,treatment)
+
+#Ranksum test - CoP
+(dv_ranksum <- wilcox.test(rev_rank ~ treatment, data = dv_ranks_pos, exact = FALSE, conf.int=TRUE))
+
+#Ranksum test - include zeroes
+(dv_ranks_all_em_t <- wilcox.test(rev_rank ~ treatment, data = dv_ranks_all_em, exact = FALSE, conf.int=TRUE))
+
+```
+
+## Tests considering magnitudes?

@@ -1,0 +1,1718 @@
+---
+title: "Analysis of Substitution patterns from experimental data"
+header-includes:
+   - \usepackage{xcolor}
+output:
+    rmdformats::readthedown:
+      code_folding: hide
+      self_contained: true
+      use_bookdown: true
+      thumbnails: true
+      lightbox: true
+      gallery: false
+      highlight: tango
+      toc_float: true
+      number_sections: true
+html_notebook: default
+pdf_document: default
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+
+---
+
+<style>
+#content{
+    background:#fcfcfc;
+    height:100%;
+    margin-left:300px;
+    /* margin:auto; */
+    max-width:1800px;
+    min-height:100%;
+    padding:1.2em 1.2em;
+}
+
+h4{
+    font-size:70%;
+      color:#8b4513;
+      text-align: right
+}
+</style>
+
+
+# Setup 
+```{r setup1, include=FALSE, warning=FALSE}
+
+local({
+  r <- getOption("repos")
+  r["CRAN"] <- "http://cran.r-project.org"
+  options(repos = r)
+})
+library(knitr)
+library(tidyverse)
+library(here)
+library(broom)
+library(car)
+library(citr)
+library(cobalt)
+library(coefplot)
+library(data.table)
+library(dataMaid)
+library(estimatr)
+library(huxtable)
+library(janitor)
+library(lmtest)
+library(glmnet)
+library(pwr)
+library(sandwich)
+library(tufte)
+library(kableExtra)
+library(glue)
+library(snakecase)
+
+# DescTools, blockTools, , , , , codebook, , , , dplyr, , experiment, forcats, ggsignif, glmnet, glmnetcr, glue, here, huxtable, janitor, kableExtra, knitr, , lubridate, magrittr, paramtest, plyr, purrr, purrr, pwr, pwr, randomizr, readxl, recipes, recipes, reporttools, rsample, sandwich, sjmisc, skimr, snakecase, statmod, statmod, summarytools, tidyverse
+
+library(here)
+here <- here::here
+source(here("code", "functions.R"))
+
+source(here::here("code", "baseoptions.R"))
+library(ggsignif)
+
+# install.packages("checkpoint")
+# library(checkpoint)
+# checkpoint("2019-05-21", checkpointLocation = tempdir()) #fixes packages as of this date for reproduceability
+```
+
+Source the data import, cache it (or not)
+```{r import, include=FALSE, warning=FALSE, cache=FALSE}
+
+purl(here("analysis", "ImportData.Rmd"), output = here("code", "ImportData.R"))
+
+source(here("code", "ImportData.R"))
+```
+
+# Literature review (models used)
+
+See bottom of SPI2018_tufteadapt.Rmd
+
+E.g., @Filiz-OzbayUler:2018 -- For each charity/use, ranksum of pre-rebate donation (later use net contribution), comparing each rebate, same for total.  
+
+### OLS on rebate and square for own/other charity, robust se, broad set of controls. Elasticity estimates (table 5) for net and gross.
+
+<br><br>
+
+# Experimental Design
+
+Three independent experiments: 1. Essex (2017 run, 2019 run),  2. Exeter,  Todo -- incorporate: 3. Giving Tuesday (todo: incorporate)
+
+```{r lists-or-vectors-of-variables, echo=TRUE, warning=FALSE,message=FALSE}
+
+nbrnames <- sx %>%
+  filter(year == 2017) %>%
+  ungroup()
+
+ControlsEsxFitme_nomood <- c(names(dplyr::select(sx, sex:dimpairment, btwn_invite_dur, -birth, age, -starts_with("word"), -starts_with("eyes"), -contains("ctry2"), -contains("ctry3"))), "eyes_ correct_pct", "childpresentmdl", "clustergroup", "ordergroup", nbrnames, "happiness_1_beforeask", "student", "word_correct_pct")
+
+ControlsEsxFitme <- c(ControlsEsxFitme_nomood, "mood_order_treat")
+ModeratorsEsxFitme <- ControlsEsxFitme # Same, but for 'honest' data mining work; Essex data only
+```
+
+```{r load recipes,warning=FALSE,message=FALSE}
+
+# source(here("code","Recipes.R"))
+```
+
+## Timing
+
+> The assigned timings for the 2019 invitation are described below. 
+
+```{r timing}
+(essex2019_treat_dates <- tribble(
+  ~Round, ~Week, ~"Start date", ~"Deadline", ~"DoW",
+  1, "5a", "24 April", "26 April", "Wed--Fri",
+  1, "6a", "1 May", "3 May", "Wed--Fri",
+  2, "6b/7a", "4 May", "7 May", "Sat--Tue",
+  2, "7b/8a", "11 May", "14 May", "Sat--Tue"
+))
+
+(essex2019_treat_assign <- tribble(
+  ~Delay, ~Timing, ~Obs, ~"Delay time",
+  "Medium-1", "5a--6b", 100, "10 days",
+  "Long", "5a--7b", 200, "17 days",
+  "Short", "6a--6b", 200, "3 days",
+  "Medium-2", "6a--7b", 100, "10 days"))
+```
+
+*Putting this terms of actual dates:* 
+
+(Hardcoded:)
+
+- 2017: Essexlab (mainly student) pool: Invitations 20-21 days apart (Quota turned over at roughly 11pm on 6 June; reminder on 15 June; second ask 27 June 3pm, reminders 3 July and 10 July)
+
+- 2017: Nonstudent recruits: Invitations 8-17 days apart
+  - DR calendar 8 May 'Launched first Nonstudent emails'; batches also scheduled on 10, 12, 15, 17 May
+Qualtrics: NS 2nd ask sent 25 May 2017 3:00 PM BST)}
+
+- 2019: planned/executed dates shown [HERE](https://docs.google.com/document/d/17FgeSSdy1XZD7kEsEWGyRocZJP5B-FynO7gwYqZ8agQ/edit#); 3 day, 10 day, 17 day gaps; start dates 24 April and 1 May; second round dates 4 May and 11 May; see variables `StartDate` and `EndDate` 
+
+
+## Scoping for 2019; moved to scoping_2019.rmd, including response time histograms
+
+Before running our 2019 experiment, we did some scoping tests which informed our design, particular in balancing/blocking our treatment (as well as power analyses).
+
+Considering 1. feasibility of proposed time limits, 2. Evidence of non-random delay in responses
+
+
+## Power calculations (for 2019): moved to assignments_power.Rmd
+
+# Summary statistics and diagnostics, balance
+
+(Note: much of this discussion is copied from the Pre-analysis plan (PAP); see analysisplan_substn_excerpt_comments.md)
+
+## Treatment allocation, balance across arms
+
+*We present statistics on our sample sizes and the balance across our treatment arms (charitable asks/non-asks, similarity, duration between invitations/responses), for each experiment and for the pooled data. *
+
+```{r treatment-allocation, include=TRUE, paged.print=FALSE, warning=FALSE}
+
+pp("treatment allocations and balance")
+
+(tab_treatalloc_sx <- sx %>%
+  dplyr::filter(stage == "2") %>%
+  tabyl(treat_first_ask, treat_second_ask) %>%
+  tabylstuff(cap = "Essex 2017-2019: first and second-stage treatments"))
+
+(tab_treatalloc_sx17 <- sx %>%
+  dplyr::filter(stage == "2", year == 2017) %>% tabyl(treat_first_ask, treat_second_ask) %>% # 1 line bc same as above
+  tabylstuff(cap = "Essex 2017: first and second-stage treatments"))
+
+(tab_treatalloc_sx19_sh <- sx %>%
+  dplyr::filter(year == 2019, stage == "2", btwn_invite_dur < 4) %>%
+  tabyl(treat_first_ask, treat_second_ask) %>%
+  tabylstuff(cap = "Essex 2019: 1st and 2nd stage treatments, short gap"))
+
+(tab_treatalloc_sx19_med <- sx %>%
+  dplyr::filter(year == 2019, stage == "2", btwn_invite_dur > 4, btwn_invite_dur < 11) %>%
+  tabyl(treat_first_ask, treat_second_ask) %>%
+  tabylstuff(cap = "Essex 2019: 1st and 2nd stage treatments, medium gap"))
+
+(tab_treatalloc_sx19 <- sx %>%
+  dplyr::filter(year == 2019, stage == "2") %>%
+  tabyl(treat_first_ask, treat_second_ask) %>%
+  tabylstuff(cap = "Essex 2019: 1st and 2nd stage treatments"))
+
+(tab_treatalloc_ex <- ex %>%
+  dplyr::filter(stage == "2") %>%
+  tabyl(treat_first_ask, d_attrited) %>%
+  tabylstuff("Exeter: treatments, attrition"))
+
+pp("ASSIGNED timings 2019: OM1/2 vs EF1/2")
+treat_efb <- read_csv(here("data/essex_2019/treat_efb.csv")) %>%
+  mutate(treat_efb = case_when(
+    treat_efb == 1 ~ "EF1",
+    treat_efb == 2 ~ "EF2",
+    TRUE ~ treat_efb
+  ))
+(tab_timings <- sx %>% tabyl(block_om, treat_efb) %>% kable(caption = "ASSIGNED timings 2019: OM1/2 vs EF1/2", format = "html") %>% kable_styling())
+
+pp("Note: OM1 and OM2 may not have equal sample sizes because we only *assigned* equal numbers, quotas were not reached for either")
+
+pp("ACTUAL timings (of invitations, 2019; this includes attriters")
+(tab_treatalloc_sx <- sx %>%
+  dplyr::filter(stage == "2", year == 2019) %>%
+  tabyl(block_om, treat_efb) %>%
+  tabylstuff(cap = "Essex 2017-2019: first and second-stage treatments"))
+
+```
+
+<br><br>
+
+
+## Balance across treatment arms
+
+Create a table here like the one sketched below
+
+|                  |                      | S2 Charity       |         | Delay |      |      |   |
+|------------------|----------------------|------------------|---------|-------|------|------|---|
+|                  | Row means (intended) | S2: Int          | S2: Dom | Short | Med. | Long |   |
+| Column Means     |                      | .51 (0.5)        |         |       |      |      |   |
+| S1: no ask       | .33 (.33)            | actual (col*row) |         |       |      |      |   |
+| S1: Int.         | .34 (.33)            | 0.174 (0.173)    |         |       |      |      |   |
+| S1: Dom          | .32 (.33)            |                  |         |       |      |      |   |
+| S1: Start date A | .49 (.50)            |                  |         |       |      |      |   |
+| S1: Start date B | .51 (.50)            |                  |         |       |      |      |   |
+
+               |                      |                  |         |       |      |      |   |
+               
+               
+```{r balance-arms-table}
+
+sx %>%  filter(stage==1) %>% tabyl(treat_no_ask,treat_efb) %>%  adornme("all",cap="a caption", title="a title")
+
+#I want expected frequencies here...
+
+```
+               
+## Summary statistics and balance tables 
+
+> [PAP]: In the event that the treatment and control groups are substantially unbalanced on any pre-treatment characteristics (individual characteristics or stated beliefs), we will control for these in all specifications, with these controls included based on their importance in a ridge regression. 
+
+*Our data is rich, including over XXX survey variables and pre-treatment characteristics. To provide background on the nature of our sample, we present  key demographics of our population(s).*
+
+- Todo - major sumstats for key variables
+
+*We next measure the extent to which our randomization and blocking was succesful, measuring the differences in ex-ante characteristics across treatments, as well as the difference in ``predicted donation'' arising from this.*
+
+Todo: balance tables of demographics (ControlsAdhocEsx?) on treatment
+
+## 2019: Durations between INVITATIONS *vs* durations between ASKS
+
+*We consider how our differential delay in invitations affected the timing of responses. This is essentially a manipulation check, but it is also helpful in understanding the design and timing.*
+
+```{r timings-induced,align='center',fig.align='Timings allocation (Essex 2019)'}
+
+invite_v_ask_gaps_19 <- sx %>%
+  mutate(year = as.factor(year)) %>%
+  filter(stage == "2") %>%
+  ggplot(aes(x = btwn_invite_dur, y = btwn_ask_dur, shape = d_donation), color = year) +
+  geom_jitter(width = .25, size = 3) +
+  scale_fill_brewer(palette = "Dark1") +
+  geom_abline(intercept = 0, slope = 1, color = "grey") +
+  expand_limits(x = 0, y = 0) +
+  xlab("Between Invites Duration") +
+  ylab("Between Asks Duration")
+
+invite_v_ask_gaps_19
+```
+
+<br><br>
+
+## Attrition
+
+```{r Attrition-tables, include=TRUE, paged.print=FALSE,warning=FALSE}
+
+pp("Tables of attrition, tests of significant differences in attrition by treatment")
+
+pp("Ask by attrition by year:")
+
+sx %>%
+  tabyl(treat_no_ask, f_attrited, year) %>%
+  adorn_percentages("row") %>%
+  adorn_pct_formatting(digits = 1) %>%
+  adorn_ns()
+
+pp("Overall (Essex)")
+TABAttrTreat_1719 <- sx %>%
+  dplyr::filter(stage == "2") %>%
+  tabyl(treat_first_ask, f_attrited) %>%
+  tabylstuff(cap = "Essex overall 2017-19: Attrition by first ask")
+TABAttrTreat_1719
+
+pp("Essex, 2019")
+TABAttrTreat_19 <- sx %>%
+  dplyr::filter(year == 2019 & stage == "2") %>%
+  tabyl(treat_first_ask, f_attrited) %>%
+  tabylstuff(cap = "Essex 2019: Attrition by first ask")
+TABAttrTreat_19
+
+pp("Essex, 2017")
+TABAttrTreat_17 <- sx %>%
+  filter(year == 2017 & stage == "2") %>%
+  dplyr::filter(stage == "2") %>%
+  tabyl(treat_first_ask, f_attrited) %>%
+  tabylstuff(cap = "Essex 2017: Attrition by first ask")
+TABAttrTreat_17
+
+pp("Essex: Attrition by first ask and by student status")
+TABAttrTreat2 <- sx %>%
+  filter(year == 2017) %>%
+  dplyr::filter(stage == "2") %>%
+  tabyl(treat_no_ask, attrited, student)
+
+FT_Attrite_SX <- fisher.bintest(d_attrited ~ treat_no_ask, filter(sx, stage == "2"), alpha = 0.05, p.method = "fdr")
+
+FT_Attrite_SX_17 <- fisher.bintest(d_attrited ~ treat_no_ask, filter(sx, stage == "2", year == 2017), alpha = 0.05, p.method = "fdr")
+
+try(FT_Attrite_SX_ns <- fisher.bintest(d_attrited ~ treat_no_ask, filter(sx, stage == "2", student == "Non student"), alpha = 0.05, p.method = "fdr"))
+
+pp("2017-19: fisher test p value, attrition by 'No ask' treatment")
+FT_Attrite_SX$p.value
+
+"Note: A p-value of one for this test means 'this is as balanced as it could be'"
+
+pp("2017: fisher test p value, attrition by 'No ask' treatment")
+FT_Attrite_SX_17$p.value
+
+pp("2017, nonstudents: fisher test p value, attrition by 'No ask' treatment, nonstudents")
+try(FT_Attrite_SX_ns$p.value)
+
+"Non-students, 2017"
+# two tables, student, nonstudent (for fitting on the page)
+(TABAttrTreat2_NS <- sx %>% filter(year == 2017) %>%
+  dplyr::filter(stage == "2", student == "Non student") %>%
+  tabyl(treat_no_ask, attrited) %>%
+  tabylstuff("Essex, Nonstudents: Attrition by S1 ask"))
+
+"Students, 2017"
+(TABAttrTreat2_S <- sx %>% filter(year == 2017) %>%
+  dplyr::filter(stage == "2", student == "Student") %>%
+  tabyl(treat_no_ask, attrited) %>%
+  tabylstuff("Essex, students: Attrition by S1 ask"))
+
+pp("Exeter")
+# attrition for Exeter (atm this is redundant, same as tab_treatalloc_ex)
+(TABAttrTreat_ex <- ex %>%
+  dplyr::filter(stage == "1") %>%
+  tabyl(treat_first_ask, d_attrited) %>%
+  tabylstuff("Exeter: Attrition by S1 treatment")
+)
+```
+
+# Donations (by treatment, distributions)
+
+We present summary statistics of the donation incidence, levels, and distribution by charity and treatment.
+  
+*We first compare the first-stage donation (among those asked) between  attriters vs non-attriters. For now, let's assume the same attrition for international and domestic asks.*
+
+```{r Summary-stats-Donations, include=TRUE, paged.print=FALSE}
+
+
+(TableDonFirstCharityAttrEssex <- sx %>%
+  filter(stage == "1", treat_no_ask == "Asked") %>%
+  sumtab_func_full(donation, d_attrited, "Essex: S1 donation by attrition (asked only)") %>%
+  kable_styling())
+
+
+pp("for 2017...")
+
+(TableDonFirstCharityAttrEssex <- sx %>% filter(stage == "1", treat_no_ask == "Asked", year == 2017) %>% sumtab_func_full(donation, d_attrited, "2017: Essex: S1 donation by attrition (asked only)") %>% kable_styling())
+
+pp("2019...")
+(TableDonFirstCharityAttrEssex <- sx %>% filter(stage == "1", treat_no_ask == "Asked", year == 2019) %>% sumtab_func_full(donation, d_attrited, "2017: Essex: S1 donation by attrition (asked only)") %>% kable_styling())
+
+(tab_don_s1 <- sx %>% filter(year == 2017) %>%
+  dplyr::filter(stage == "1") %>%
+  tabyl(treat_first_ask, donation) %>%
+  tabylstuff("Essex: S1 donations by stage-1 treatment"))
+
+"First and second ask donation by treatment and stage (separating out attriters)"
+
+(TableDonEssex <- sx %>% filter(year == 2017) %>%
+  sumtab2_func(donation, treatment, stage, "Essex, overall; Mean (sd) obs"))
+
+(TableDonEssexS <- sx %>% filter(year == 2017) %>%
+  filter(student == "Student") %>%
+  sumtab2_func(donation, treatment, stage, "students; Mean (sd) obs"))
+
+(TableDonEssexNS <- sx %>% filter(year == 2017) %>%
+  filter(student == "Non student") %>%
+  sumtab2_func(donation, treatment, stage, "Nonstudents; Mean (sd) obs"))
+
+
+(TableDonExeter <- ex %>%
+  sumtab2_func(donation, treat_first_ask, stage, "Exeter; Mean (sd) obs")) # todo: labels for Exeter, generate attrition*treatment
+```
+
+```{r Diagnostic-tests, include=TRUE}
+
+pp("Shapiro Wilk test for normality; Essex, Exeter")
+
+SXDonShapiroTest <- shapiro.test(sx$donation)
+EXDonShapiroTest <- shapiro.test(ex$donation)
+
+# ShapiroTest <- map_df(list(SXDonShapiroTest, EXDonShapiroTest), tidy)
+
+# (ShapiroTest <- kable(ShapiroTest) %>% kable_styling())
+```
+
+The results from the Shapiro Wilk normality test ...
+
+The p-values are  `r SXDonShapiroTest[2]` for Essex suggesting this data `r ifelse(SXDonShapiroTest[2]<0.10, "is not", "is")` normal
+
+and `r EXDonShapiroTest[2]` for Exeter suggesting this data `r ifelse(SXDonShapiroTest[2]<0.10, "is not", "is")` normal.
+
+*Comments on previous chunk:*
+
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+<div class = "blue">
+
+PAP:
+
+If the data suggests strong departures from the linear or exponential models, e.g., bi-modality or sensitivity to outliers,  we may also report specifications  more appropriate to these functional forms, and will make an argument for the suitability of these,  noting this was not central to our initial plan.
+
+</div>
+
+<!--DR: what did we mean here?: ``We focus these tests on the summary statistics presented above. (Donation levels by charity and treatment, demographics of our population(s))''-->
+
+
+## Main comparisons
+
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+<div class = "blue">
+
+PAP (2017):
+
+We will perform standard parametric and nonparametric statistical analyses on full relevant samples, as well as testing for differences between subsets mentioned below.
+
+As treatments are administered randomly, and by design orthogonally to one another, we will first report statistical test without controls, particularly Fisher's exact test (for categorical outcomes and treatments) and Wilcoxon rank-sum test for continuous outcome variables.
+
+...
+
+We will test for differences in the level and incidence of contributions at the *second intervention* (for the nonstudents this is via the Omnibus; for the students, this is via the employability survey), between:
+
+1. 'No ask' vs 'some previous ask'
+2. 'Previous ask for similar charity' vs 'Previous ask for distinct charity'
+3. 'Previous ask for similar charity in poverty domain' vs 'Previous ask for similar charity in health domain'
+4. Recent previous ask (based on time email was sent to participant) versus less recent ask (we will fit a model of 'impact of delay on later contribution')
+
+For 2-4, we will also test for differences in differences, e.g., we will test whether those who are asked to donate to a similar charity increase or decrease their donations (between the 2 time intervals) more than those asked to donate to a distinct charity.
+
+
+</div>
+
+*Ex post update:*  The nonstudent response was small, and we were required to contact all students simultaneously; thus we have little power to distinguish the 'relative timing' effects for 2017 -- but we will bring this BACK including 2019.
+
+Add to this, several models *pooling* Essex+Exeter;
+- no ask vs some previous ask
+- where 'previous ask for similar charity in poverty domain' vs 'previous ask for similar charity in non-poverty domain'; leaving out Essex obs where 2nd stage is domestic (i.e., outcome variable is 'giving to poverty in stage 2' only)
+
+
+<br><br>
+
+## Simple statistical tests for treatment differences
+
+```{r treatment-differences--Statistical-tests-without-controls, include=TRUE, warning=FALSE}
+
+# t-test Donations
+
+pp("Defining treatment combinations here")
+
+TreatCombinations <- split(combn(levels(sx$treatment), 2), rep(1:ncol(combn(levels(sx$treatment), 2)), each = nrow(combn(levels(sx$treatment), 2)))) # get treatment combinations into a list of column vectors
+TreatCombinations <- Filter(function(x) !any(grepl("Attrite", x)), TreatCombinations)
+
+pp("Key comparisons")
+
+# (ttest_results <- TreatCombinations %>%
+#   map(function(x) {
+#       sx %>% filter(treatment %in% x & stage == "2") %>% do(tidy(t.test(donation ~ treatment, data = .)))
+#     } %>% add_column(Comparison = paste(x, collapse = " vs. "), .before = TRUE)) %>%
+#   bind_rows() %>%  kable(,caption="T-tests, key comparisons, non-attriters", digits = 2) %>% kable_styling() %>%
+#       scroll_box(width = "100%", height = "450px"))
+#
+
+# (wilcoxtest_results <- TreatCombinations %>%
+#   map(function(x) {
+#       sx %>% filter(treatment %in% x) %>% do(tidy(wilcox.test(donation ~ treatment, data = .)))
+#     } %>% add_column(Comparison = paste(x, collapse = " vs. "), .before = TRUE) %>% as_tibble()) %>%
+#   bind_rows() %>% kable(,caption="Wilcoxon-tests, key comparisons, non-attriters", digits = 2) %>% kable_styling() %>%
+#       scroll_box(width = "100%", height = "450px"))
+
+# mutate(TreatRow = fct_recode(as.factor(TreatRow), "Do-Do" = "1", "Do-Int" = "2", "Int-Do" = "3", "Int-Int" = "4", "No-Do" = "5")) %>%
+
+```
+
+## Computing Fisher tests for donation incidence; 2017-19 together
+
+```{r Fisher-tests-donation-incidence, include=TRUE, warning=FALSE}
+
+"By ask/no-ask"
+
+FT_treat_no_ask <- fisher.bintest(d_donation ~ treat_no_ask, filter(sx, stage == "2"), alpha = 0.05, p.method = "fdr")
+# FT_treat_no_ask_ns_17 <- fisher.bintest(d_donation ~ treat_no_ask, filter(sx, year== 2017, student == "Non student", stage == "2",treat_efb=="EF1",!is.na(d_donation)), alpha = 0.05, p.method = "fdr")
+# FT_treat_no_ask_s_17 <- fisher.bintest(d_donation ~ treat_no_ask, filter(sx, year== 2017, student == "Student", stage == "2"), alpha = 0.05, p.method = "fdr")
+
+FT_treat_no_ask_19 <- fisher.bintest(d_donation ~ treat_no_ask, filter(sx, year == 2019, stage == "2"), alpha = 0.05, p.method = "fdr")
+
+FT_treat_no_ask_19_short <- fisher.bintest(d_donation ~ treat_no_ask, filter(sx, year == 2019, stage == "2", btwn_invite_dur < 4), alpha = 0.05, p.method = "fdr")
+
+FT_treat_no_ask_19_long <- fisher.bintest(d_donation ~ treat_no_ask, filter(sx, year == 2019, stage == "2", btwn_invite_dur > 10), alpha = 0.05, p.method = "fdr")
+# FT_treat_sim_dif <- fisher.bintest(d_donation~treat_sim_dif, filter(ADXX,stage==2,d_attrited==0), alpha = 0.05, p.method = "fdr")
+
+FT <- list(FT_treat_no_ask, FT_treat_no_ask_19, FT_treat_no_ask_19_short, FT_treat_no_ask_19_long)
+FTnames <- c("All", "2019", "2019-short", "2019-long")
+FT <- map2(FT, FTnames, function(x, y) {
+  broom::tidy(x) %>% add_column(Experiment = y)
+}) %>%
+  bind_rows() %>%
+  kable(, caption = "S2 Donation incidence by S1 Ask/no-ask; Fisher tests", digits = 2) %>%
+  kable_styling()
+
+FT
+```
+
+
+## Plotting S1 and S2 contributions by treatment/attrition
+
+```{r Plots, out.width=c('50%', '50%'), fig.show='hold', include=TRUE, warning=FALSE}
+
+# todo: SX/EX/GT together?
+
+DotPlotsxcolours <- c(
+  `No ask-Domestic` = "red2",
+  `No ask-Internat.` = "blue3",
+  `No ask-Attrite` = "white",
+  `Domestic-Domestic` = "red",
+  `Domestic-Internat.` = "purple",
+  `Domestic-Attrite` = "red3",
+  `Internat.-Domestic` = "maroon",
+  `Internat.-Internat.` = "blue",
+  `Internat.-Attrite` = "blue1"
+)
+
+DotPlotsxshapes <- c(
+  `No ask-Domestic` = 0,
+  `No ask-Internat.` = 1,
+  `No ask-Attrite` = 4,
+  `Domestic-Domestic` = 15,
+  `Domestic-Internat.` = 18,
+  `Domestic-Attrite` = 12,
+  `Internat.-Domestic` = 18,
+  `Internat.-Internat.` = 16,
+  `Internat.-Attrite` = 13
+)
+
+pp("'Shapes' worked before but they are not working now")
+
+(DotPlotsx17 <- sx %>%
+  mutate(stage = as.numeric(stage)) %>%
+  filter(treatment != "No ask-Attrite", year == 2017) %>%
+  dotplot_func(donation, stage, treatment, "Essex 2017: mean donations by stage, treatment, attrition") +
+  scale_colour_manual(values = DotPlotsxcolours) +
+  scale_shape_manual(values = DotPlotsxshapes))
+
+(DotPlotsx19 <- sx %>%
+  mutate(stage = as.numeric(stage))
+  %>% filter(treatment != "No ask-Attrite", year == 2019) %>%
+  dotplot_func(donation, stage, treatment, "Essex 2019: mean donations by stage, treatment, attrition") + scale_colour_manual(values = DotPlotsxcolours) + scale_shape_manual(values = DotPlotsxshapes))
+
+# todo: Organize colors and characters used for observation points (@GR:  I'm halfway there, but I don't know how to separately color dots and lines)
+# ... red dots = Domestic, blue dots = international always
+# ... red lines = dom-dom, blue lines = int-int
+# ... purple lines = int-dom, pink= dom-int
+# ... can we add 'error bands' to this without cluttering?
+# Even better: uniform symbol for all dots with same first treatment (e.g., "D"" for domestic, "I"" for international, "N" for no ask) similar for second treatment
+
+DotPlotexcolours <- c(
+  `No ask-Unicef` = "purple",
+  `No ask-Attrite` = "white",
+  `Oxfam-Unicef` = "blue",
+  `Oxfam-Attrite` = "blue3",
+  `WWF-Unicef` = "red",
+  `WWF-Attrite` = "red3"
+)
+
+(DotPlotex <- ex %>% filter(treatment != "No ask-Attrite") %>% dotplot_func(donation, stage, treatment, "Exeter: mean donations by stage, treatment") + scale_colour_manual(values = DotPlotexcolours))
+
+# todo: label Exeter variable
+
+# Todo: Needs better formatting
+```
+
+## Boxplots: donation by treatment, tests of differences
+
+```{r boxplots, include=TRUE, warning=FALSE }
+
+pp("2017 Essex only")
+
+(BoxPlotsx17 <- sx %>% filter(year == 2017) %>%
+  filter(stage == "2") %>%
+  boxplot_func(donation, treatment, comparisons = list(c("No ask-Domestic", "Domestic-Domestic"), c("No ask-Internat.", "Internat.-Internat."))) +
+  ylab("Donation"))
+
+pp("2017-19 Essex")
+
+(box_charpairings_17_19 <- sx %>% filter(stage == "2", d_attrited == 0) %>%
+  boxplot_func(donation, treatment, comparisons = list(c("No ask-Domestic", "Domestic-Domestic"), c("No ask-Internat.", "Internat.-Internat."))) +
+  ylab("Donation"))
+
+pp("2017-19 Essex,students only")
+
+(box_charpairings_17_19_stud <- sx %>% filter(stage == "2", d_attrited == 0, student == "Student") %>%
+  boxplot_func(donation, treatment, comparisons = list(c("No ask-Domestic", "Domestic-Domestic"), c("No ask-Internat.", "Internat.-Internat."))) +
+  ylab("Donation"))
+```
+
+
+*Comments on previous chunk:*
+
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+<div class = "blue">
+
+PAP: Even under randomization, there will typically be an inexact balance in predetermined characteristics across treatments. Thus, regressions controls for predetermined observable characteristics (such as gender or income) can sometimes make estimates more efficient. Thus we report regressions with controls. We will perform model-fitting (e.g., stepwise regression) to determine the most efficient set of predetermined controls. We will run linear and Poisson-exponential regressions for charitable giving outcomes (as these are bounded variables), and also do robustness checks for other popular specifications used for bounded dependent variables, such as Tobit models. Similarly we will also report linear probability models and logit models for binary dependent variables, especially the extensive margin (donated a positive amount to a particular charity).  We are not likely report so-called "conditional on positive" effects, as these are difficult to identify  without an exogenous instrument for the extensive margin decision (we will only do so if such an instrument/shifter  becomes apparent to us in a very obvious way after collecting the data.)
+
+</div>
+
+
+<br><br>
+
+```{r CDF Ask-vs-no-ask,echo = TRUE, warning=FALSE, fig.height=5,fig.align='center'}
+
+# Todo: let's line these up side by side - 2017, 2019, pooled
+# PlotAskNoAsk <- sxB %>% ggplot(aes(donation, colour = treat_no_ask)) +
+#  stat_ecdf(geom = "step")
+
+comparisons <- list(c("Asked", "No ask"))
+bpltDon_17 <- sx %>%
+  filter(year == 2017, stage == "2", d_attrited == 0) %>%
+  boxplot_func(donation, treat_no_ask, comparisons = comparisons) + ylab("Donation")
+bpltDon_17
+bpltDon_19 <- sx %>%
+  filter(year == 2019, stage == "2", d_attrited == 0) %>%
+  boxplot_func(donation, treat_no_ask, comparisons = comparisons) +
+  ylab("Donation")
+bpltDon_19
+# ...ggboxplot(x = "treat_no_ask", y = "donation", color = "treat_no_ask", palette =c("#00AFBB", "#E7B800"), shape = "treat_no_ask") + stat_compare_means(label="t.test", comparisons = comparisons, method = "t.test")
+
+bpltDon_17_19 <- sx %>%
+  filter(stage == "2", d_attrited == 0) %>%
+  boxplot_func(donation, treat_no_ask, comparisons = comparisons) +
+  ylab("Donation")
+bpltDon_17_19
+#############################################
+
+sx$student <- fct_recode(sx$student, "Student" = "1", "Non student" = "0")
+
+bplt_facet_Don_17_19 <- sx %>%
+  filter(stage == "2", d_attrited == 0) %>%
+  ggplot(aes(treat_no_ask, donation)) +
+  geom_boxplot() +
+  ylab("Donation") +
+  stat_summary(
+    fun.y = mean, geom = "point", shape = 18,
+    size = 3, color = "red"
+  ) +
+  facet_grid(student ~ year)
+
+pp("By year and (2017) student status")
+
+bplt_facet_Don_17_19 <- sx %>%
+  filter(stage == "2", d_attrited == 0) %>%
+  ggplot(aes(treat_no_ask, donation)) +
+  geom_boxplot() +
+  ylab("Donation") +
+  facet_grid(student ~ year) +
+  geom_signif(
+    comparisons = comparisons,
+    step_increase = c(.4), vjust = 1.7, margin_top = .7, textsize = 3
+  ) +
+  geom_signif(
+    comparisons = comparisons,
+    step_increase = c(.4), vjust = 0, margin_top = .7, textsize = 3, test = "t.test"
+  ) +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 14)
+  ) +
+  theme(axis.text.x = element_text(size = 12)) +
+  labs(title = "treatment", y = "donation", caption = "p-values of Wilcox-(below) and  t-test (above brackets)") +
+  stat_summary(
+    fun.y = mean, geom = "point", shape = 18,
+    size = 3, color = "red"
+  )
+bplt_facet_Don_17_19
+
+pp("by time delay between asks")
+bplt_facet_start_Don_19t <- sx %>%
+  filter(stage == "2", d_attrited == 0, year == 2019) %>%
+  ggplot(aes(treat_no_ask, donation)) +
+  geom_boxplot() +
+  ylab("Donation") +
+  facet_grid(~ floor(btwn_invite_dur)) +
+  #  geom_signif(comparisons = comparisons,
+  #                step_increase = c(.4), vjust = 1.7, margin_top = .7, textsize = 3) +
+  #  geom_signif(comparisons = comparisons,
+  #              step_increase = c(.4), vjust = 0, margin_top = .7, textsize = 3, test = "t.test") +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 14)
+  ) +
+  theme(axis.text.x = element_text(size = 12)) +
+  labs(title = "treatment", y = "donation", caption = "p-values of Wilcox-(below) and  t-test (above brackets)") +
+  stat_summary(
+    fun.y = mean, geom = "point", shape = 18,
+    size = 3, color = "red"
+  )
+
+bplt_facet_start_Don_19t
+
+pp("by charity similarity")
+
+bplt_facet_similarity_Don_sim <- sx %>%
+  drop_na(treat_sim_dif) %>%
+  filter(stage == "2", d_attrited == 0) %>%
+  ggplot(aes(treat_sim_dif, donation)) +
+  geom_boxplot() +
+  ylab("Donation") +
+  geom_signif(
+    comparisons = c(1, 2),
+    step_increase = c(.4), vjust = 1.7, margin_top = .7, textsize = 3
+  ) +
+  geom_signif(
+    comparisons = c(1, 2),
+    step_increase = c(.4), vjust = 0, margin_top = .7, textsize = 3, test = "t.test"
+  ) +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 14)
+  ) +
+  theme(axis.text.x = element_text(size = 12)) +
+  labs(title = "treatment", y = "donation", caption = "p-values of Wilcox-(below) and  t-test (above brackets)") +
+  stat_summary(
+    fun.y = mean, geom = "point", shape = 18,
+    size = 3, color = "red"
+  )
+
+bplt_facet_similarity_Don_sim
+
+pp("By charity similarity, total donations")
+bplt_facet_similarity_don_sim_tot <- sx %>%
+  filter(stage == "2", d_attrited == 0) %>%
+  ggplot(aes(treat_sim_dif, total_don)) +
+  geom_boxplot() +
+  ylab("Total don") +
+  geom_signif(
+    comparisons = c(1, 2),
+    step_increase = c(.4), vjust = 1.7, margin_top = .7, textsize = 3
+  ) +
+  geom_signif(
+    comparisons = c(1, 2),
+    step_increase = c(.4), vjust = 0, margin_top = .7, textsize = 3, test = "t.test"
+  ) +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 14)
+  ) +
+  theme(axis.text.x = element_text(size = 12)) +
+  labs(title = "treatment", y = "Total don", caption = "p-values of Wilcox-(below) and  t-test (above brackets)") +
+  stat_summary(
+    fun.y = mean, geom = "point", shape = 18,
+    size = 3, color = "red"
+  )
+
+bplt_facet_similarity_don_sim_tot
+```
+
+
+```{r fig-BoxPlotsx, fig.width = 10, fig.height = 5, fig.fullwidth = TRUE, message=FALSE, warning=FALSE}
+# todo: better ordering of treatments
+
+box_charpairings_17 <- sx %>%
+  filter(year == 2017, stage == "2", d_attrited == 0) %>%
+  boxplot_func(donation, treatment, comparisons = list(c("No ask-Domestic", "Domestic-Domestic"), c("No ask-Internat.", "Internat.-Internat."))) +
+  ylab("Donation") +
+  stat_summary(
+    fun.y = mean, geom = "point", shape = 18,
+    size = 3, color = "red"
+  )
+box_charpairings_17
+
+box_charpairings_19 <- sx %>%
+  filter(year == 2019, stage == "2", d_attrited == 0) %>%
+  boxplot_func(donation, treatment, comparisons = list(c("No ask-Domestic", "Domestic-Domestic"), c("No ask-Internat.", "Internat.-Internat."))) +
+  ylab("Donation") +
+  stat_summary(
+    fun.y = mean, geom = "point", shape = 18,
+    size = 3, color = "red"
+  )
+box_charpairings_19
+
+box_charpairings_17_19 <- sx %>%
+  filter(stage == "2", d_attrited == 0) %>%
+  boxplot_func(donation, treatment, comparisons = list(c("No ask-Domestic", "Domestic-Domestic"), c("No ask-Internat.", "Internat.-Internat."))) +
+  ylab("Donation") +
+  stat_summary(
+    fun.y = mean, geom = "point", shape = 18,
+    size = 3, color = "red"
+  )
+
+box_charpairings_17_19
+
+box_similar_19 <- sx %>%
+  filter(year == 2019, stage == "2", d_attrited == 0) %>%
+  boxplot_func(donation, treat_sim, comparisons = list(c("No ask", "Similar"), c("No ask", "Different"))) +
+  stat_summary(
+    fun.y = mean, geom = "point", shape = 18,
+    size = 3, color = "red"
+  ) +
+  ylab("Donation")
+box_similar_19
+```
+
+## Regression analysis
+
+Below, we (plan to) run the 'matrix' of regressions (iterate function?) for
+
+- students, nonstudents, pooled
+- s2 donation, total donation, s2 donated,  (and 'deltas?'),
+- pooled/disagreggated treatments, and with/without 'similar charity' interaction and 'controls' for charity type
+- linear, Poisson-exponential, (tobit), (quantile?)
+- no 'noise-reduction' controls, ad-hoc controls, model-fit controls (Ridge Regression with regularization over noise variables only)
+
+Also:
+
+- ? what to do with S1 donations? (see previous and other papers; endogeneity/mediation an issue)
+  - control
+- adding Lee bounds for each?
+- outcome 'donation to charity in s2' with controls for charity type, s1 charity type,  interaction?
+
+```{r recipe-working}
+
+sxm <- sx %>% select(donation, d_donation, total_don, firstasktreat, matches("treat|decision|btwn|dur|aid|EyesCorrectPct|^d_|country_birth|student|salaryrequest_1|ask|dur|educ|mom|dad|political|worth|respect|trust|risk|satisfaction|no_good|redist|private_redist|^uk|tax_share|children|birth_nation", -matches("seconds|sbeforeask|dur_survey.2|Duration (in seconds).2|lose|mx25|beforeask")),  to_snake_case(hroot_vars))
+
+# sx_r <- recipes::recipe(donation+d_donation+total_don~., data = sxm) %>%
+#   step_meanimpute(all_numeric(), -all_outcomes()) %>%  step_knnimpute(all_nominal()) %>%  step_center(all_numeric(), -all_outcomes()) %>% step_scale(all_numeric(), -all_outcomes()) %>%  step_other(all_nominal()) %>% #all nominal variables with lt 5% ofgg obs --> other
+#   prep(training = sxm) %>%  recipes::bake(sxm)
+```
+
+## 'Regular' regressions
+
+```{r Regressions-with-controls-not-for-lee, eval=TRUE, include=TRUE}
+
+# create design matrix
+# rec_donationSX in recipes.R
+
+# suppressWarnings(try(sxprep <- prep(rec_donationSX, retain = TRUE) %>% juice()))
+
+# trying out simple models-- cut?
+
+model1 <- lm(donation ~ treatment, data = sx %>% filter(stage == "2"))
+model2 <- lm(donation ~ treatment + sex, data = sx %>% filter(stage == "2"))
+
+# todo - format this table with kable
+
+IndepVars <- paste(ControlsAdhocEsx, collapse = " + ") %>%
+  paste("~", .)
+
+ControlsAdhocEsxs <- c("sex", "age", "race", "P_Sympathetic_Warm", "essex_uni_student", "EyesCorrectPct", "V_benevolence", "V_universalism", "trust", "risk_willingness", "self_worth", "decision_mode", "mood_order_treat_1", "mood_order_treat")
+
+# variables "childpresentmdl", "clustergroup"
+
+IndepVars_s <- paste(ControlsAdhocEsxs, collapse = " + ") %>%
+  paste("~", .)
+
+
+# Second stage total/incidence
+# Overall effect of first ask
+# Decision mode
+
+pp("Overall effect of first ask on second donation:")
+
+ols_don_tr_noask <- lm(donation ~ treat_no_ask, data = sx %>% filter(stage == "2"))
+ols_don_tr_noask_2017 <- lm(donation ~ treat_no_ask, data = sx %>% filter(stage == "2" & year == 2017))
+ols_don_tr_noask_2019 <- lm(donation ~ treat_no_ask, data = sx %>% filter(stage == "2" & year == 2019))
+
+hux_ols_don_tr_noask <- huxreg("Pooled" = ols_don_tr_noask, "2017" = ols_don_tr_noask_2017, "2019" = ols_don_tr_noask_2019, ci_level = .95, error_format = "[{conf.low}, {conf.high}]")
+
+hux_ols_don_tr_noask
+
+ols_dond_tr_noask <- lm(as.double(d_donation) ~ treat_no_ask, data = sx %>% filter(stage == "2"))
+ols_dond_tr_noask_2017 <- lm(as.double(d_donation) ~ treat_no_ask, data = sx %>% filter(stage == "2" & year == 2017))
+ols_dond_tr_noask_2019 <- lm(as.double(d_donation) ~ treat_no_ask, data = sx %>% filter(stage == "2" & year == 2019))
+
+hux_ols_dond_tr_noask <- huxreg("Pooled" = ols_dond_tr_noask, "2017" = ols_dond_tr_noask_2017, "2019" = ols_dond_tr_noask_2019, ci_level = .95, error_format = "[{conf.low}, {conf.high}]")
+
+
+pp("Overall effect of first ask on second donation INCIDENCE:")
+
+hux_ols_dond_tr_noask
+
+pp("By SIMILARITY:")
+
+ols_don_sim_noask <- lm(donation ~ treat_sim, data = sx %>% filter(stage == "2"))
+ols_don_sim_noask_2017 <- lm(donation ~ treat_sim, data = sx %>% filter(stage == "2" & year == 2017))
+ols_don_sim_noask_2019 <- lm(donation ~ treat_sim, data = sx %>% filter(stage == "2" & year == 2019))
+
+hux_ols_don_sim_noask <- huxreg("Pooled" = ols_don_sim_noask, "2017" = ols_don_sim_noask_2017, "2019" = ols_don_sim_noask_2019, ci_level = .95, error_format = "[{conf.low}, {conf.high}]")
+
+hux_ols_don_sim_noask
+
+pp("Overall effect of first ask on TOTAL donation, by similarity")
+
+ols_tdon_sim_noask <- lm(total_don ~ treat_sim, data = sx %>% filter(stage == "2"))
+ols_tdon_sim_noask_2017 <- lm(total_don ~ treat_sim, data = sx %>% filter(stage == "2" & year == 2017))
+ols_tdon_sim_noask_2019 <- lm(total_don ~ treat_sim, data = sx %>% filter(stage == "2" & year == 2019))
+
+hux_ols_tdon_sim_noask <- huxreg("Pooled" = ols_tdon_sim_noask, "2017" = ols_tdon_sim_noask_2017, "2019" = ols_tdon_sim_noask_2019, ci_level = .95, error_format = "[{conf.low}, {conf.high}]")
+
+hux_ols_tdon_sim_noask
+
+
+# Overall by time differential
+pp("# Overall by time differential")
+
+ols_don_noaskXdur_2019 <- lm(donation ~ treat_no_ask * as.factor(round(btwn_invite_dur)), data = sx %>% filter(stage == "2" & year == 2019))
+
+hux_ols_don_noaskXdur_2019 <- huxreg(ols_don_noaskXdur_2019)
+# hux_ols_don_noaskXdur_2019
+
+huxreg(ols_don_noaskXdur_2019, ci_level = .95, error_format = "[{conf.low}, {conf.high}]")
+
+# Decision mode
+pp("Decision mode")
+
+ols_don_noaskXdec_mode_2019 <- lm(donation ~ treat_no_ask * d_decis_intu, data = sx %>% filter(stage == "2" & year == 2019))
+
+ols_don_simXdec_mode_2019 <- lm(donation ~ treat_sim * d_decis_intu, data = sx %>% filter(stage == "2" & year == 2019))
+
+huxreg(ols_don_noaskXdec_mode_2019, ols_don_simXdec_mode_2019)
+
+
+CrossReg <- cross2(DonOutVars, IndepVars_s) %>%
+  map(purrr::lift(paste)) %>%
+  unlist() # sets up linear model arguments for each of the DonOutVars
+
+linreg <- function(relation) {
+  # regstr <- paste(DepVar, " ~ ", )
+  model <- lm(as.formula(relation), data = subset(sx, stage == "2"))
+  model
+}
+
+# try(models <- map(CrossReg, linreg)) # runs lm for each of "CrossReg" models
+# if you include the varls  "childpresentmdl", "clustergroup" --> Error in `contrasts<-`(`*tmp*`, value = contr.funs[1 + isOF[nn]]) :  contrasts can be applied only to factors with 2 or more levels
+# ... these (and all varls) need to be imputed where missing
+
+sx_fixNA <- sx %>% NA_preproc()
+
+lik7_levels <- c("Disagree Strongly", "Disagree Moderately", "Disagree a little", "Neither agree nor disagre", "Agree a little", "Agree Moderately", "Agree Strongly")
+
+
+
+# sx_fixNA <- sx %>% NA_preproc()
+# sxcplt <- sx_fixNA[complete.cases(as.data.frame(sx_fixNA[ControlsEsxFitme])), ]
+
+# NOTE: this is only a temporary solution -- we need to impute missings!
+
+# ...first *with* treatment
+
+# ...next *without* treatment, create quantiles to feed into Lee bounds
+```
+
+
+Todo: DR: Unfortunately, standard errors are still rather wide. Need to look more closely at this, see what we preregistered in terms of including controls (e.g., for Pat’s treatment) and sensitivity to outliers (is negative binomial better?).
+
+We *must* control for the start/end dates themselves, especially when we are considering the Ask*invitation-time-gap interaction.
+
+We can also look more closely at (e.g.) ‘similar vs distinct charity’ and ‘short versus long gap’ perhaps we attain narrower bounds for this specific measure… for the latter a modest upper bound would also be interesting? (edited) 
+
+Include estimates incorporating the Lee (2009) bounds [?alt Horowitz and Manski (2000a)?]
+
+<style>
+div.red { background-color:##faae9d; border-radius: 5px; padding: 20px;}
+</style>
+<div class = "red">
+
+amounts to first identifying the excess number of individuals who are induced to be selected... [in our case an non-attriters] because of the treatment and then “trimming” the upper and lower tails of the outcome ... distribution by this number, yielding a worst-case scenario bound. The assumptions for identifying the bounds are already assumed in conventional models for sample selection: (1) the regressor of interest is independent of the errors in the outcome and selection equations and (2) the selection equation can be written as a standard latent variable binary response model. In the case of an experiment, random assignment ensures that the first assumption holds. It is proven that the trimming procedure yields the tightest bounds for the average treatment effect that are consistent with the observed data. No exclusion restrictions are required, nor is a bounded support for the outcome variable.
+
+</red>
+
+
+```{r Creating-matrix-of-robustness-checks-for-alternate-specifications--inclusion-criteria}
+
+# Logistic regression
+# S1.logist <- glm(S1.Contrib ~ relevel(Shares, ref="High") + GroupRelationship, family=binomial(link='logit'), data=d)
+# summary(S1.logist)
+# confint(S1.logist, level=0.95)
+# anova(S1.logist, test="Chisq") #not sure what this part does
+```
+
+## Differentiation of estimated effects (heterogeneity, interactions)
+
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+<div class = "blue">
+
+PaP: Previous work (Reinstein, 2011; Karlan and Wood 2017, indirectly) suggests a greater degree of substitution (crowding-out) among those who are large and regular givers. ...
+
+Donors who have a personal optimization strategy and target, rather than donors who respond to emotional cues and  powerful appeals,  are also  arguably more likely to exhibit substitution.  Because of this, we will differentiate our estimates by personality attributes (measure in the omnibus) that previous literature find are associated with analytical versus emotional decision-making.
+
+We will estimate all of the above pooling students and Non-students as our primary object of interest; we will estimate these separately as a secondary descriptive result.
+
+Because giving behavior has been found in many cases to differ by gender and by religious background, we will also bifurcate our estimates by these categories (gender, indicated religious affiliation vs. agnostic/atheist).  We have no ex-ante hypothesis for differences in the substitution effects between these groups.
+
+</div>
+
+### Regressions-- "honest" differentiation (cross-validated and adjusted for mht), considering nonlinearity
+```{r honest-differentiation-nonlinearity}
+#' by personality attributes that previous literature find are associated with analytical versus emotional decision-making.
+
+#' also bifurcate our estimates by these categories (gender, indicated religious affiliation vs. agnostic/atheist).'
+
+# by students and nonstudents
+```
+
+## Mediation analysis (exploratory)
+
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+<div class = "blue">
+
+PAP: We will also attempt to measure whether the impact of the first ask on later donations is *mediated* by the donation response to the first ask (e.g., those who *donate* in the first ask may donate less in the second ask, while those who do *not* donate in the first ask may donate more in the second ask). However, mediation analysis is difficult,  and we will state our results cautiously, following the guidance and techniques suggested in Heckman and Pinto (2014).
+
+<\div>
+
+```{r Mediation-analysis}
+
+```
+
+## Attrition: Bounding estimators
+
+- Ridge regressions to generate 'quantiles of predicted donations'
+- ... to use in Lee bound estimators with controls
+
+```{r ridge-and-preparation-for-Lee-bound-estimator, eval=FALSE, warning=FALSE, include=FALSE}
+
+# Ridge following instructions from <https://drsimonj.svbtle.com/ridge-regression-with-glm_net>
+
+# SXAH_r <- SXAH_r %>%
+#   select_if(function(x) !(all(is.na(x)) | all(x == ""))) %>%
+#   purrr::keep(is.numeric) # Drop non-numeric and always-missing
+# # rem: SXAH_r generated in Recipes.R
+
+# SXAHnoatr <- SXAH_r %>% filter(!is.na(donation))
+# y <- SXAHnoatr %>%
+#   filter(!is.na(donation)) %>%
+#   select(donation) %>%
+# data.matrix()
+
+# kitchen sink of pre-determined non-treatment variables
+x_df <- SXAHnoatr %>% dplyr::select(-one_of(sx_outcomes_ah), -one_of(sx_treatments_ah))
+x <- x_df %>% data.matrix()
+
+lambdas <- 10^seq(3, -2, by = -.1)
+
+library(glmnet)
+
+pp("Having conformability issues here")
+
+MSEs <- NULL
+for (i in 1:50) {
+  cv_fit <- cv.glmnet(x, y, alpha = 0, lambda = lambdas, standardize = TRUE, nfolds = 4)
+  MSEs <- cbind(MSEs, cv_fit$cvm)
+}
+# rownames(MSEs) <- cv_fit$lambda
+lambda.min <- as.numeric(names(which.min(rowMeans(MSEs))))
+
+# todo: generate predictions for all obs (including attriters), put into quantile bins
+# opt_lambda <- cv_fit$lambda.min
+fit <- cv_fit$glmnet.fit
+y_predicted <- predict(fit, s = lambda.min, newx = x)
+sst <- sum((y - mean(y))^2)
+# sse <- sum((y_predicted - y)^2)
+# R squared
+# rsq <- 1 - sse / sst
+
+print("(naive) rsq of CV ridge model:")
+# rsq
+
+# generate predictions for all obs including attriters?
+x_all <- SXAH_r %>%
+  dplyr::select(-one_of(sx_outcomes_ah), -one_of(sx_treatments_ah)) %>%
+  data.matrix()
+y_predicted <- predict(fit, newdata = SXAH_r, s = lambda.min, newx = x_all)
+
+# Putting back into a data frame to use in Lee
+xdf <- x_all %>% as.data.frame(as.table(.))
+y_predicted <- y_predicted %>% as.data.frame(.)
+colnames(y_predicted) <- c("y_predict") # not tidy
+SXAH_pr <- bind_cols(y_predicted, SXAH)
+
+# Make quantiles of prediction, merge back into data to use in lee bounds
+SXAH_pr$Q10_y_predict <- CutQ(SXAH_pr$y_predict, breaks = quantile(SXAH_pr$y_predict, seq(0, 1, by = 0.1)))
+SXAH_pr$Q5_y_predict <- CutQ(SXAH_pr$y_predict, breaks = quantile(SXAH_pr$y_predict, seq(0, 1, by = 0.2)))
+
+# DR: I can't get this to work with dplyr  ??mutate(percrank=rank(value)/length(value))
+
+SXAH_pr_l <- SXAH_pr %>% dplyr::select("treatment", "treat_no_ask", "donation", "d_attrited", "stage", "student", "Q10_y_predict", "Q5_y_predict", "y_predict", "sex", "treat_second_ask_noa", "Treat_Int_Dom")
+```
+
+
+
+```{r lee-bound-estimation, eval=FALSE, warning=FALSE, include=FALSE}
+
+# stata code
+if (Sys.info()["sysname"] == "Darwin") {
+  options("RStata.StataPath" = "/Applications/Stata/StataSE.app/Contents/MacOS/stata-se")
+  stataver <- 15
+} else {
+  options("RStata.StataPath" = "/usr/local/stata14/stata-se")
+  stataver <- 14
+}
+
+p_load(RStata)
+# Todo: get these estimates to code a value for "NA's"
+
+# this is our 'best' one; but I did fish it # stata(src = stata_leebound, data.in = sxdta, stata.version = stataver)
+
+pp("students and nonstudents together;  deciles of predicted donations (from ridge) used to tighten Lee bounds:")
+
+stata_leebound <- "leebounds donation treat_no_ask if stage == "2" , tight(Q10_y_predict) cie level(95)"
+stata(src = stata_leebound, data.in = SXAH_pr_l, stata.version = stataver)
+
+pp("Same as above, bootstrapped:")
+stata_leebound <- "leebounds donation treat_no_ask if stage == "2" , tight(Q10_y_predict) cie level(95) vce(boot, reps(100))"
+stata(src = stata_leebound, data.in = SXAH_pr_l, stata.version = stataver)
+
+pp("Compare to standard linear models, with and without the 2nd ask treatment dummy")
+
+mod_s2_x <- lm(donation ~ treat_no_ask + y_predict * student + Q5_y_predict * student + treat_second_ask_noa * student, data = SXAH_pr_l)
+
+mod_s2_x2 <- lm(donation ~ treatment + y_predict * student + Q5_y_predict * student, data = SXAH_pr_l)
+
+huxreg(mod_s2_x, mod_s2_x2)
+
+pp("Lee bounds, for students, as above (equivalent predicted outcome tighteners, for this sample)")
+SXAH_pr_l_s <- SXAH_pr_l %>% filter(student == "Student")
+SXAH_pr_l_s$Q10s_y_predict <- CutQ(SXAH_pr_l_s$y_predict, breaks = quantile(SXAH_pr_l_s$y_predict, seq(0, 1, by = 0.1)))
+
+stata_leebound <- " leebounds donation treat_no_ask if stage == "2" , tight(Q10s_y_predict)  cie level(95)"
+stata(src = stata_leebound, data.in = SXAH_pr_l_s, stata.version = stataver)
+
+pp("Compare to a standard linear model:")
+lm(donation ~ treat_no_ask + y_predict + Q10s_y_predict + treat_second_ask_noa, data = SXAH_pr_l_s) %>% huxreg()
+
+pp("Lee bounds, for non-students, as above (equivalent predicted outcome tighteners, for this sample)")
+SXAH_pr_l_ns <- SXAH_pr_l %>% filter(student == "Non student")
+SXAH_pr_l_ns$Q5ns_y_predict <- CutQ(SXAH_pr_l_ns$y_predict, breaks = quantile(SXAH_pr_l_ns$y_predict, seq(0, 1, by = 0.2)))
+
+stata_leebound <- " leebounds donation treat_no_ask if stage == "2" , tight(Q5ns_y_predict)  cie level(95)"
+stata(src = stata_leebound, data.in = SXAH_pr_l_ns, stata.version = stataver)
+
+p_unload(RStata)
+```
+
+
+```{r Manski-bounds-and-other-stuff, eval=TRUE, warning=FALSE, include=FALSE}
+# CrossReg <- cross2(DonOutVars, IndepVars) %>% map(lift(paste)) %>% unlist() # linreg <- function(relation) { # regstr <- paste(DepVar, " ~ ", ) # model <- lm(as.formula(relation), data = subset(sx, stage == "2")) # model # }
+# s2don_model_1 <- lm(donation ~ treatment, data = SXAH  %>% filter(stage == "2")) # todo - ad the ad-hoc controls, format this table with kable
+
+# manski bounds
+#manskibounded <- try(ATEbounds(donation ~ treat_no_ask, data = SXAH %>% filter(stage == "2")))
+# Error in matrix(NA, ncol = 2, nrow = M) : non-numeric matrix extent
+
+pp("Manski bounds:")
+# manskibounded$bounds
+
+# sx2 <- filter(sx, stage == "2" & treat_no_ask != "NA") %>%
+# dplyr::select(donation, treat_no_ask, d_attrited) %>%
+# mutate(
+# treat_no_ask = 2 - as.numeric(treat_no_ask),
+# attrited = as.numeric(d_attrited) - 1
+# )
+
+# sx2 %>% group_by(treat_no_ask) %>% summarise(PropAtt = mean(attrited))
+
+sx2019_trim_bounds_no_ask <- attrition::estimator_trim(
+  Y = donation,
+  Z = d_treat_noask,
+  R = d_responded,
+  data =
+    sx %>% filter(year == 2019 & stage == "2") %>%
+      mutate(
+        d_treat_noask = ifelse(treat_no_ask == "Asked", 1, 0),
+        d_responded = 1 - d_attrited
+      ) %>%
+      select(donation, d_responded, d_treat_noask)
+) %>%
+  as.list() %>%
+  as_tibble() %>%
+  select("Upper bound" = upper_bound, "Lower bound" = lower_bound, "Trimming prop." = Q, "Obs. Contr." = control_group_N, "Obs. Treat." = treat_group_N)
+
+sx2019_trim_bounds_no_ask %>%
+  kable() %>%
+  kable_styling()
+
+sx2017_trim_bounds_no_ask <- attrition::estimator_trim(
+  Y = donation,
+  Z = d_treat_noask,
+  R = d_attrited,
+  data =
+    sx %>% filter(year == 2017 & stage == "2") %>%
+      mutate(
+        d_treat_noask = ifelse(treat_no_ask == "Asked", 1, 0),
+        d_responded = 1 - d_attrited
+      ) %>%
+      select(donation, d_attrited, d_treat_noask)
+) %>%
+  as.list() %>%
+  as_tibble() %>%
+  select("Upper bound" = upper_bound, "Lower bound" = lower_bound, "Trimming prop." = Q, "Obs. Contr." = control_group_N, "Obs. Treat." = treat_group_N)
+
+sx2017_trim_bounds_no_ask %>%
+  kable() %>%
+  kable_styling()
+
+
+
+sx2019_trim_bounds_similar <- attrition::estimator_trim(
+  Y = donation,
+  Z = d_treat_similar,
+  R = d_responded,
+  data =
+    sx %>% filter(year == 2019 & stage == "2") %>%
+      mutate(
+        d_treat_similar = ifelse(treat_sim_dif == "Similar", 1, 0),
+        d_responded = 1 - d_attrited
+      ) %>%
+      select(donation, d_responded, d_treat_similar) %>%
+      filter(!is.na(d_treat_similar))
+) %>%
+  as.list() %>%
+  as_tibble() %>%
+  select("Upper bound" = upper_bound, "Lower bound" = lower_bound, "Trimming prop." = Q, "Obs. Contr." = control_group_N, "Obs. Treat." = treat_group_N)
+
+sx2019_trim_bounds_similar %>%
+  kable() %>%
+  kable_styling()
+# not sure that this gets us -- it yields NA for lower and upper bounds
+
+
+```
+
+
+# Additional results of interest
+```{r Additional-results-of-interest}
+
+```
+
+## Happiness data inventory
+
+1. 320 (approx) Prolific Giving and Probability participants, all asked 'happiness' questions
+
+2. Omnibus 2017
+
+3. Omnibus 2019
+
+## Ex-post power analyses and other evidentiary considerations
+
+# Meta-analysis (present and prior work, own and other authors) (tod0)
+
+
+
+## Building rich frames for modeling, exploring regressions (?)
+
+```{r modeling}
+model_s2don <- sx %>%
+  filter(stage == "2", !grepl("Attrite", treatment)) %>%
+  lm(donation ~ treatment + sex + mood_order_treat_2 + dow_s_2, data = .)
+# model_s2don_lmr <- coeftest(model_s2don, vcov = vcovHC)
+
+pbt_model_s2don <- sx %>%
+  filter(stage == "2", !grepl("Attrite", treatment), !is.na(d_donation)) %>%
+  glm(d_donation ~ treatment + sex + mood_order_treat_2 + dow_s_2, data = ., family = binomial(link = "probit"))
+
+# model_s2don_ws1don <- sx %>%
+#  filter(stage == "2", !grepl("attrite", treatment)) %>%
+#  lm(donation ~ treatment + sex + mood_order_treat_2 + dow_s_2 + s1_donation, data = .)
+#model_s2don_ws1don_lmr <- coeftest(model_s2don, vcov = vcovHC)
+
+# pbt_model_s2don_ws1don <- sx %>%
+#  filter(stage == "2", !grepl("Attrite", treatment), !is.na(d_donation)) %>%
+#  glm(d_donation ~ treatment + sex + mood_order_treat_2 + dow_s_2 + s1_donation, data = ., family = binomial(link = "probit"))
+# pp("day of the week test:")
+# (dowtest <- linearHypothesis(pbt_model_s2don, matchCoefs(pbt_model_s2don, "dow")))
+
+#pp("day of the week test, with s1 don control:")
+#(dowtest_ws1d <- linearHypothesis(pbt_model_s2don_ws1don, matchCoefs(pbt_model_s2don_ws1don, "dow")))
+
+model_s2don_ns <- sx %>%
+  filter(stage == "2", student == "Non student", !grepl("Attrite", treatment)) %>%
+  lm(donation ~ treatment + sex + dow_s_2, data = .)
+# model_s2don_ns_lmr <- coeftest(model_s2don_ns, vcov = vcovHC)
+
+# model_s2don_stud_ws1don <- sx %>%
+#  filter(stage == "2", student == "Student", !grepl("Attrite", treatment)) %>%
+#  lm(donation ~ treatment + sex + mood_order_treat_2 + dow_s_2 + s1_donation, data = .)
+# model_s2don_stud_ws1don_lmr <- coeftest(model_s2don_stud_ws1don, vcov = vcovHC)
+
+# pbt_model_s2don_stud_ws1don <- sx %>%
+#  filter(stage == "2", student == "Student", !grepl("Attrite", treatment)) %>%
+#  glm(d_donation ~ treatment + sex + mood_order_treat_2 + dow_s_2 + s1_donation, data = ., family = binomial(link = "probit"))
+
+# model_s2don_ns_ws1don <- sx %>%
+#  filter(stage == "2", student == "Non student", !grepl("Attrite", treatment)) %>%
+#  lm(donation ~ treatment + sex + mood_order_treat_2 + dow_s_2 + s1_donation, data = .)
+#model_s2don_ns_ws1don_lmr <- coeftest(model_s2don_stud_ws1don, vcov = vcovHC)
+
+# pbt_model_s2don_ns_ws1don <- sx %>%
+#  filter(stage == "2", student == "Non student", !grepl("Attrite", treatment)) %>%
+#  glm(d_donation ~ treatment + sex + mood_order_treat_2 + dow_s_2 + s1_donation, data = ., family = binomial(link = "probit"))
+
+# pp("Day of week joint hypothesis tests, student and nonstudent:")
+
+# (dowtest_stud <- linearHypothesis(model_s2don_stud_ws1don, matchCoefs(model_s2don_stud_ws1don, "dow")))
+# (dowtest_ns <- linearHypothesis(model_s2don_ns_ws1don, matchCoefs(model_s2don_ns_ws1don, "dow")))
+
+# pp("Regressions, non-robust se's (couldn't get those to work)")
+# huxreg("don-S2" = model_s2don_lmr, "Probit-d_don-S2" = pbt_model_s2don, model_s2don_ws1don_lmr, "Probit-d_don-S2" = pbt_model_s2don_ws1don, "students" = model_s2don_stud_ws1don_lmr, "students, probit" = pbt_model_s2don_stud_ws1don, "Non-students" = model_s2don_ns_ws1don_lmr, "Non-students, probit" = pbt_model_s2don_ns_ws1don)
+```
+
+# Misc exploratory/descriptive analyses of relation to Omnibus variables, etc
+
+```{r misc-explore-omni-link}
+
+"By \'It's very important to him/her to help the people around him/her. S/he wants to care for their well-being.'"
+
+
+sx %>%
+  filter(year == 2019, stage == "1") %>%
+  tabyl(schwartz_s_1_3) %>%
+  adorn_percentages("col") %>%
+  adorn_pct_formatting(digits = 2) %>%
+  adorn_ns() %>%
+  kable() %>%
+  kable_styling()
+
+"Donations by Schwartz empathy"
+sx %>%
+  filter(year == 2019, stage == "1", treat_no_ask == "Asked") %>%
+  dplyr::group_by(schwartz_s_1_3) %>%
+  dplyr::summarize(n(), mean(d_donation), mean(total_don), median(total_don), sd(total_don), mean(donation), sd(donation)) %>%
+  kable() %>%
+  kable_styling()
+
+"Donations by trust - stage 1 and total"
+sx %>%
+  filter(stage == "1", treat_no_ask == "Asked") %>%
+  dplyr::group_by(trust) %>%
+  dplyr::summarize(n(), mean(d_donation), mean(total_don), median(total_don), sd(total_don), mean(donation), sd(donation)) %>%
+  kable() %>%
+  kable_styling()
+
+"Donations by trust (s2)"
+sx %>%
+  filter(stage == "2") %>%
+  dplyr::group_by(trust) %>%
+  dplyr::select(donation, d_donation, total_don, trust) %>%
+  dplyr::summarise_all(funs(mean), na.rm = TRUE) %>%
+  kable() %>%
+  kable_styling()
+
+"Donations by trust by dom-don vs int-int"
+sx %>%
+  filter(stage == "1", treatment == "Internat.-Internat." | treatment == "Domestic-Domestic" | (d_attrited == 1 & treatment != "No ask-Attrite")) %>%
+  dplyr::group_by(treatment, trust) %>%
+  dplyr::select(donation, d_donation, total_don, trust, treatment) %>%
+  dplyr::summarise_all(funs(mean), na.rm = TRUE) %>%
+  kable() %>%
+  kable_styling()
+
+"Donated by decision mode, s1 2019)"
+sx %>%
+  filter(year == 2019, stage == "1", treat_no_ask == "Asked") %>%
+  tabyl(decision_mode, d_donation)
+
+"Donation by support dev poverty aid; s1, treat_first_ask International"
+sx %>%
+  filter(stage == "1", treat_first_ask == "International") %>%
+  dplyr::group_by(dev_poverty_aid) %>%
+  dplyr::select(donation, d_donation, total_don, dev_poverty_aid) %>%
+  dplyr::summarise_all(funs(mean), na.rm = TRUE) %>%
+  kable() %>%
+  kable_styling()
+
+"Donation by support domestic poverty aid; s1, treat_first_ask Domestic"
+sx %>%
+  filter(stage == "1", treat_first_ask == "Domestic") %>%
+  dplyr::group_by(uk_poverty_aid) %>%
+  dplyr::select(donation, d_donation, total_don, uk_poverty_aid) %>%
+  dplyr::summarise_all(funs(mean), na.rm = TRUE) %>%
+  kable() %>%
+  kable_styling()
+```
+
+*Ad-hoc takeaways:*
+
+Schwartz classifications (hc) don't seem to matter much to donation (first glance), 
+but hc) stated trust does (need to do the formal tests)
+
+Stated support for poverty aid does as well (hc)
+
+
+**S1 donations** (within Ask treatments)?
+
+**Asked about happiness first?**: (hardcode) Little power to rule out (or in) an effect
+
+(@) Day/DoW-specific effects?
+
+(hardcode) Little power to rule out (or in) an effect; moderately signif in some tests
+
+* Better identified for nonstudents (exogenous variation)
+
+(but same lack of power)
+
+(@) For blocking: fit models of 'predicted donation' (in S1, S2)
+
+(We already did this for S2 in advance of Lee bounds)
+
+(@) ?Further power calculations?
+
+
+# Robustness checks etc
+
+## Response day of week, sensitivity to 'clumping'
+
+- Some of this is done in scoping_2019.Rmd
+
+
+## todo:  table of s1 donations by s2 treatment as a 'wtf-check' (placebo test)
+
+> As a standard placebo test, we measure the ``impact'' of our treatments on previous donations. 
+
+
+## Essex 2017
+
+- First-ask treatments:   No ask; Oxfam; British Heart Foundation
+- Second-ask donation treatments:  Save the Children; Cancer Research UK
+
+Context (all online/Qualtrics interface):
+
+- Existing Essexlab pool: Tied to omnibus survey, later employability survey recruitment; invitations 26 days apart (doublecheck)
+
+- Nonstudent recruits: Tied to recruitment survey, later Omnibus survey; invitations 8-17 days apart; CHECK
+
+#### DR calendar 8 May 'Launched first Nonstudent emails'; batches also scheduled on 10, 12, 15, 17 May
+Qualtrics: NS 2nd ask sent 25 May 2017 3:00 PM BST)
+
+## Essex 2019
+
+## Exeter
+- First-ask treatments:  No ask;  WWF; Oxfam
+- Second ask: Unicef (always)
+
+Context: Exeter students (Feele pool), tied to lab experiment and followup (payment collection)
+
+## Giving Tuesday (fill in)
+
+## Data definitions and constructions
+lists of outcome variables, treatment categorizations, controls, moderators, ?techniques
+
+## Misc exploratory analysis of donations vs omnibus measures
+
+Note: We considered using these in blocking treatments; the work below was done for blocking a follow-on experiment.
+
+``` {r donation-vs-omnibus-exploratory}
+
+sx %>%
+  filter(year == 2019, stage == "1") %>%
+  tabyl(schwartz_s_1_3) %>%
+  adorn_percentages("col") %>%
+  adorn_pct_formatting(digits = 2) %>%
+  adorn_ns() %>%
+  kable() %>%
+  kable_styling()
+
+"Donations by Schwartz empathy"
+sx %>%
+  filter(year == 2019, stage == "1", treat_no_ask == "Asked") %>%
+  dplyr::group_by(schwartz_s_1_3) %>%
+  dplyr::summarize(n(), mean(d_donation), mean(total_don), median(total_don), sd(total_don), mean(donation), sd(donation)) %>%
+  kable() %>%
+  kable_styling()
+
+"Donated by trust"
+sx %>%
+  filter(year == 2019, stage == "1", treat_no_ask == "Asked") %>%
+  tabyl(trust, d_donation) %>%
+  adorn_percentages("row") %>%
+  kable() %>%
+  kable_styling()
+
+"Donations by trust - stage 1 and total"
+sx %>%
+  filter(stage == "1", treat_no_ask == "Asked") %>%
+  dplyr::group_by(trust) %>%
+  dplyr::summarize(n(), mean(d_donation), mean(total_don), median(total_don), sd(total_don), mean(donation), sd(donation)) %>%
+  kable() %>%
+  kable_styling()
+
+"Donations by trust (s2)"
+sx %>%
+  filter(stage == "2") %>%
+  dplyr::group_by(trust) %>%
+  dplyr::select(donation, d_donation, total_don, trust) %>%
+  dplyr::summarise_all(funs(mean), na.rm = TRUE) %>%
+  kable() %>%
+  kable_styling()
+
+"Donations by trust by dom-don vs int-int"
+sx %>%
+  filter(stage == "1", treatment == "Internat.-Internat." | treatment == "Domestic-Domestic" | d_attrited == 1) %>%
+  dplyr::group_by(treatment, trust) %>%
+  dplyr::select(donation, d_donation, total_don, trust, treatment) %>%
+  dplyr::summarise_all(funs(mean), na.rm = TRUE) %>%
+  kable() %>%
+  kable_styling()
+
+"Donated by decision mode, s1 2019)"
+sx %>%
+  filter(year == 2019, stage == "1", treat_no_ask == "Asked") %>%
+  tabyl(decision_mode, d_donation)
+
+"Donation by support dev poverty aid; s1, treat_first_ask International"
+sx %>%
+  filter(stage == "1", treat_first_ask == "International") %>%
+  dplyr::group_by(dev_poverty_aid) %>%
+  dplyr::select(donation, d_donation, total_don, dev_poverty_aid) %>%
+  dplyr::summarise_all(funs(mean), na.rm = TRUE) %>%
+  kable() %>%
+  kable_styling()
+
+"Donation by support domestic poverty aid; s1, treat_first_ask Domestic"
+sx %>%
+  filter(stage == "1", treat_first_ask == "Domestic") %>%
+  dplyr::group_by(uk_poverty_aid) %>%
+  dplyr::select(donation, d_donation, total_don, uk_poverty_aid) %>%
+  dplyr::summarise_all(funs(mean), na.rm = TRUE) %>%
+  kable() %>%
+  kable_styling()
+```
+
+```{r unrelated-salary-requests-by-gender}
+
+pp("Vignette response; requested salary, before learning normal wage range")
+sx %>%
+  filter(year == 2017) %>%
+  filter(student == "Student" & stage == "2", !is.na(salaryrequest_1), salaryrequest_1 < 100) %>%
+  group_by(sex) %>%
+  summarise(n(), mean(salaryrequest_1), median(salaryrequest_1), sd(salaryrequest_1)) %>%
+  kable() %>%
+  kable_styling()
+
+pp("UK born only")
+sx %>% filter(student=="Student" & stage=="2" & d_uk_born=="Yes",between(salaryrequest_1, 15, 200),between(salaryrequest_2, 15, 200)) %>% group_by(sex) %>% summarise(n(),mean(salaryrequest_1),median(salaryrequest_1),sd(salaryrequest_1), mean(salaryrequest_2),median(salaryrequest_2),sd(salaryrequest_2)) %>% kable() %>% kable_styling()
+
+pp("Vignette response; requested salary, after learning normal wage range")
+sx %>%
+  filter(year == 2017) %>%
+  filter(student == "Student" & stage == "2", !is.na(salaryrequest_2), salaryrequest_2 < 100) %>%
+  group_by(sex) %>%
+  summarise(n(), mean(salaryrequest_2), median(salaryrequest_2), sd(salaryrequest_2)) %>%
+  kable() %>%
+  kable_styling()
+```
+
+
+We put session info at the end to help others replicate this:
+
+```{r sessinfo}
+sessionInfo()
+```
+
+# References
+
+# PAP (from OSF Pre-registration for 2019) 
+
+*Italics indicates discussion in addition to PaP*
+
+**DR: I am trying to do all analysis in the PaP starting here, moving or referencing the material above**
+
+We will test for differences in the level and incidence of contributions (and other outcome variable described below) at the second intervention (for 2019, via the employability survey), between:
+                                      
+1. ‘No ask’ vs ‘some previous ask’
+
+2. ‘Previous ask for similar charity’ vs ‘Previous ask for distinct charity’
+
+@2019, pooling both waves:  ‘Previous ask for similar charity in International domain’ vs ‘Previous ask for similar charity in Domestic domain’
+
+*See listed treatment variables coded as* `bin_treat_vars`: `r bin_treat_vars`
+
+3. “Longest delay” previous ask (based on time email was sent to participant) versus “Shortest delay”  @2019; we now have a sharper exogenous measure of delay
+
+Note we have three delay lengths. In the regression analogue will fit a model of “impact of ‘delay’ x prior ask’  on later contributions” incorporating all three lengths and controls for start and end dates. See “Matrix of Dates” and “Assignment Matrix”, which are included as attachments.
+
+*Restating this assignment...*
+
+`r essex2019_treat_assign` 
+
+*and*
+
+`r essex2019_treat_dates`
+
+*See listed treatment variables coded as...* 
+
+4. ‘Previous information on a similar cause’ vs ‘Previous information on a distinct cause’
+
+*See listed treatment variables coded as...* 
+
+## Outcomes of Interest/Measured Variables[m]
+
+The primary outcome of interest is giving in Round 2. We are primarily interested in both amount and incidence of giving.
+
+A secondary outcome of interest is attrition in Round 2 (based on literature regarding “avoiding the ask”). Attrition is defined as not responding to the second request or quitting the survey before reaching the donation page.
+
+In addition, we explore whether an ask in the first round increases positive familiarity with organizations (see mechansims discussion below). These are measured using binomial forced choice responses to two questions: a familiarity question and an impression question.
+
+Happiness is relevant to one of our secondary analyses. This is measured via a survey question with a 7-point scale, which will be collapsed and normalized in a standard manner.
+
+In @2019, similarity of information and organizations across rounds is defined as being in the same geographic sphere (i.e. domestic vs. international).[n]
+
+In @2019, ‘decision mode’ is measured using a survey question with responses grouped into two categories indicating intuitive or analytical decision making. The 2017 survey included a question about decision-making modes where one of the response options was missing. To correct for this, we will impute the responses to this question using the results from the @2019 survey. [o]
+
+Additional covariates will be measured via the survey instrument and other Omnibus surveys tied to the individual. Some categorical variables will be collapsed into levels with sufficient responses for analyses.
+
+These are
+
+## ''Answer strategy'' basic details 
+
+- We will perform standard parametric and nonparametric statistical analyses of difference in donation outcomes in Round 2 by treatments. We will do this on the full relevant samples: 
+
+  - (@2019) Pooling data from 2017 and 2019 experiments, except where the 2019 experiment incorporates a new treatment arm (the delay treatment) 
+
+  - (@2019) Aggregating/pooling across categories of ‘similar’ versus ‘distinct’ in each experiment (where the similarity groups are internationally-focused vs domestic-focused) 
+
+- We will also test for differences between subsets mentioned elsewhere in this document. 
+
+- As treatments are administered (block) randomly, and by design orthogonally to one another, we will first report statistical test without controls, particularly Fisher’s exact test (for categorical outcomes and treatments) and Wilcoxon rank-sum test for continuous outcome variables. 
+
+  - @2019: As attrition is likely to be a factor, we will use Lee-bounded estimators with fitted controls as a robustness check on the above. See our previous analysis as pushed on our linked Github 
+  
+## Additional Covariates 
+
+- Regressions/Lee: The alternate treatment (and incidental) arms will be included as dummies to reduce noise. In particular, we will include the dates the emails were sent (note this varies independently of delay).  [ex-post note: reconsidering, as these are ? exactly balanced this probably doesn't help]
+
+- In the event that the treatment and control groups are substantially unbalanced on any pre-treatment characteristics (individual characteristics or stated beliefs), we will control for these in all specifications, with these controls included based on their importance in a ridge regression. 
+
+- When appropriate, we will include the type of information provided in the vignette as an additional covariate. 
+
+## Additional Models of Interest, Etc. 
+
+- As described above, we will use Lee bounding as appropriate, particularly as a robustness check to deal with attrition. To understand effects on size of gifts (in addition to the decision to give), we will explore a quantile regression model, although we expect that the power on this model will not be sufficient to make substantial inferences from the results. 
+
+- Noting the delay between the emails sent and the participants responses in each stage, we will explore an IV model using invite-to-invite time as an instrument for ask-to-ask time. At a minimum, we will create a descriptive graph might be the donation vs the lag between first and second asks (should be a continuous variable)  - this is obviously based on some unobserved personal characteristics which may or may not be correlated with our variable of interest. To handle this endogeneity, we will use the time between invites as an instrument for the time between asks. 
+
+- We will follow standard practices in regards to Winsorizing donation outliers. Depending on the incidence of outliers, this may be used primarily as a robustness check. 
+
+- We will further explore ordered choice models; our previous experiments found donations clustered at £0, £1-2, and £10. 
+
+# Mechanisms 
+
+Earlier asks/appeals and information about a charity or cause may make individuals more generous to this same charity/cause in later asks. The individual may feel more familiar with the cause, may know more about it, and may feel especially compelled to donate if they have not responded to the previous ask. This works in the opposite direction as the ‘crowding-out’ (via moral licensing, diminishing marginal returns/ satiation of the desire to give, etc) among those who did respond to the earlier ask. Thus the crowding-out effect may be masked. It is also not sufficient to merely bifurcate our estimate of the impact of the first ask by whether a participant responded: the response or non-response to the first ask is related to inherent generosity, thus it is endogenous. Still, as a step in this direction, we aim to provide some evidence of the impact of the first ask on positive attitudes towards the cause. Thus we are adding a question about the latter in the second-round survey (see outcomes of interest/measurement above), and we will measure the impact of the first-ask for this cause on this. 
+
+- To assess this effect we run logit models with attitudes (binomial forced choice variables for familiarity and impression) as the dependent variables. 
+
+- We also run models with attitudes as a covariate to test for the role of attitudes as a moderator/mediator. Here we test to see if including attitudes in the model significantly changes the direct effect of the ask on giving. 
+
+- We will also test models that are intended to separate the effect of information and the effect of asking. The effect can be identified through the vignettes introduced earlier in the survey (coming from Lown et al’s research), including in the ‘no-ask’ treatment. To understand these separate effects, we include an additional control for type of information provided in the logit attitudinal models and in the main analyses. We also compare analyses with ‘similarity of stage 1 charity/ask’ interaction terms with analyses using ‘similarity of stage 1 information’ as interaction terms. 
+
+## Differentiation of estimated effects (heterogeneity, interactions) 
+
+Donors who have a personal optimization strategy and target, rather than donors who respond to emotional cues and powerful appeals, are also arguably more likely to exhibit substitution. Because of this, we will differentiate our estimates by a measure of analytical versus emotional decision-making. The key measure of this will be the “decision mode” variable, which we will also use for blocking the most relevant treatments. 
+
+Because giving behavior has been found in many cases to differ by gender and by religious background, we will also bifurcate our estimates by these categories (gender, indicated religious affiliation vs. agnostic/atheist). Im considering these interaction terms, we will correct for multiple hypothesis testing. Previous work (Reinstein, 2011; Karlan and Wood 2017, indirectly) suggests a greater degree of substitution (crowding - out) among those who are large and regular givers. We do not have direct measures of this, but we will attempt to differentiate by likely correlates. (We may have to collect these in a follow-up study.) In particular, we are interested in income and its correlates, such as view age, graduate student status, and non-single status. 
+
+An additional interesting question is whether those who gave in the first round are more likely to change their behavior in the second round. This essentially a question of the effect of treatment on the treated (and suffers from the same endogeneity as this construct typically does). If we believe that change in giving in a second stage arise largely because of changes in budget, knowledge, or similar, then individuals who gave in the first round would have stronger first round treatments. Thus we look for heterogeneous results based on first round gifts."
+
+## Missing Data
+
+The 2017 survey included a question about decision-making modes where one of the response options was missing. To correct for this, we will impute the responses to this question using the results from the @2019 survey. 
+
+## Notes
+
+

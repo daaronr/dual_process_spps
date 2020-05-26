@@ -1,0 +1,1485 @@
+---
+title: "Analysis - dual process and information and image treatments"
+header-includes:
+   - \usepackage{xcolor}
+output:
+    rmdformats::readthedown:
+      code_folding: hide
+      self_contained: true
+      use_bookdown: true
+      thumbnails: true
+      lightbox: true
+      gallery: false
+      highlight: tango
+      toc_float: true
+      number_sections: true
+html_notebook: default
+pdf_document: default
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+
+---
+
+<style>
+
+
+
+p{
+    font-size:16px;
+    line-height:24px;
+    margin:0px 0px 12px 0px;
+}
+
+h1,h2,h3,h4,h5,h6,legend{
+    font-family: Arial,Arial,Arial,sans-serif,sans-serif;
+    font-weight:700;
+    color: #9F2042;
+}
+
+content{
+    background:#fcfcfc;
+    height:100%;
+    margin-left:300px;
+    /* margin:auto; */
+    max-width:2800px;
+    min-height:100%;
+    padding:1.2em 1.2em;
+    margin-right: 0px
+}
+
+body{
+    background:#edf0f2;
+    color:#404040;
+    font-family:"Helvetica Neue","proxima-nova",Arial,sans-serif;
+    font-weight:normal;
+    margin:0;
+    min-height:100%;
+    overflow-x:hidden;
+}
+
+h4{
+    font-size:70%;
+      color:#8b4513;
+}
+
+h5{
+    font-size:70%;
+      color:#8b4513;
+      text-align: right
+}
+
+
+</style>
+
+# Background
+
+(from prereg)
+
+> Participants have taken an unrelated online survey (roughly 20 minutes) in exchange for being entered into a raffle for one of twenty £50 Amazon vouchers. The chances of winning are unknown to participants but could be inferred to be of magnitude of between 1/10 and 1/300. [Ex-post note: roughly 1/20 chance].  They are asked if they would like to commit to donate part of that amount, if they win, to charity. They first choose one of two charities (guide dog charity [cost ineffective] or river blindness charity [cost effective]), or neither, to support. This choice of charity is the first dependent measure. Subsequently they indicate on a slider scale with £1 increments how much, if anything that they would like to give (commit to give). That scale represents the second dependent measure.
+
+**Note: adapting from analysis_subst as a start**
+
+# Setup 
+
+```{r setup1, include=FALSE, warning=FALSE}
+
+local({
+  r <- getOption("repos")
+  r["CRAN"] <- "http://cran.r-project.org"
+  options(repos = r)
+})
+library(knitr)
+library(tidyverse)
+library(here)
+library(broom)
+library(car)
+library(citr)
+library(cobalt)
+library(coefplot)
+library(data.table)
+library(dataMaid)
+library(estimatr)
+library(furniture)
+library(huxtable)
+library(janitor)
+library(lmtest)
+library(glmnet)
+library(pwr)
+library(sandwich)
+library(tufte)
+library(kableExtra)
+library(glue)
+library(snakecase)
+library(gmodels)
+library(pscl)
+library(margins)
+
+# DescTools, blockTools, , , , , codebook, , , , dplyr, , experiment, forcats, ggsignif, glmnet, glmnetcr, glue, here, huxtable, janitor, kableExtra, knitr, , lubridate, magrittr, paramtest, plyr, purrr, purrr, pwr, pwr, randomizr, readxl, recipes, recipes, reporttools, rsample, sandwich, sjmisc, skimr, snakecase, statmod, statmod, summarytools, tidyverse
+
+library(here)
+here <- here::here
+source(here("code", "functions.R"))
+
+source(here::here("code", "baseoptions.R"))
+library(ggsignif)
+
+# install.packages("checkpoint")
+# library(checkpoint)
+# checkpoint("2019-05-21", checkpointLocation = tempdir()) #fixes packages as of this date for reproduceability
+```
+
+Source the data import (cache it or not)
+```{r import, include=FALSE, warning=FALSE, cache=FALSE}
+
+purl(here("analysis", "ImportData.Rmd"), output = here("code", "ImportData.R"))
+
+source(here("code", "ImportData.R"))
+```
+
+# Literature review (models used)
+
+
+# Reference prereg/PaP here
+
+<br><br>
+
+# Experimental Design
+
+(see prereg)
+
+```{r lists-or-vectors-of-variables, echo=TRUE, warning=FALSE, message=FALSE}
+
+#ControlsFitme_nomood <- c(names(dplyr::select(sx_dp, sex:dimpairment, btwn_invite_dur, -birth, age, -starts_with("word"), -starts_with("eyes"), -contains("ctry2"), -contains("ctry3"))), "eyes_ correct_pct", "childpresentmdl", "clustergroup", "ordergroup", nbrnames, "happiness_1_beforeask", "student", "word_correct_pct")
+
+#ControlsFitme <- c(ControlsEsxFitme_nomood, "mood_order_treat")
+#ModeratorsEsxFitme <- ControlsEsxFitme # Same, but for 'honest' data mining work; Essex data only
+```
+
+```{r load recipes,warning=FALSE,message=FALSE}
+
+# source(here("code","Recipes.R"))
+
+```
+
+## Power calculations (for 2019): (where?) 
+
+# Descriptive, exploratory, 'checking it worked'
+
+
+## Treatment allocation
+
+*We present statistics on our sample sizes and the balance across our treatment arms*
+
+```{r treatment-allocation, include=TRUE, paged.print=FALSE, warning=FALSE}
+
+#pp("treatment allocations and balance")
+
+(tab_treatalloc_sx_dp <- sx_dp %>%
+  tabyl(treat_image, treat_eff_info) %>%
+  tabylstuff_nocol(cap = "Image and effectiveness information treatments"))
+
+pp("By 'river blindness first' charity ordering, effectiveness info, image treatment")
+(tab_treatalloc_char_effect_image <- sx_dp %>%  tabyl(treat_image, treat_eff_info, d_river_1_st))
+
+pp("By prior 'aid treatment', effectiveness info, image treatment")
+(tab_treatalloc_aid_effect_image <-sx_dp %>%  tabyl(treat_image, treat_eff_info, aid_treat))
+
+```
+
+<br><br>
+
+## Summary statistics and balance tables 
+
+*Our data is rich, including over 150 survey variables and pre-treatment characteristics. To provide background on the nature of our sample, we present key demographics of our population(s).*
+
+- Todo - major sumstats for key variables (code share with substitution paper)
+
+*We next measure the extent to which our randomization and blocking was succesful, measuring the differences in ex-ante characteristics across treatments, as well as the difference in ``predicted donation'' arising from this.*
+
+Todo: balance tables of demographics (ControlsAdhocEsx?) on treatment
+
+## Donations (by treatment, distributions)
+
+We present summary statistics of the donation incidence, levels, and distribution by charity and treatment.
+  
+A preliminary tab
+
+```{r Summary-stats-Donations_prelim, include=TRUE, paged.print=FALSE}
+
+sumstats_dp <- sx_dp %>% group_by(treat_eff_info, treat_image) %>%
+ summarise(mn_don =mean(donation,na.rm=TRUE),
+           d_donation = mean(as.numeric(d_donation), na.rm=TRUE),#this one looks a miscode
+           mn_don_river =mean(don_river,na.rm=TRUE),
+           d_don_river = mean(as.numeric(d_don_river),na.rm=TRUE),
+           mn_don_gd =mean(don_guide_dogs,na.rm=TRUE),
+            d_don_gd = mean(as.numeric(d_don_guide_dogs),na.rm=TRUE)) 
+
+sumstats_dp %>% kable(digits = 1) %>% kable_styling()
+
+cis_dp <- sx_dp %>%  group_by(treatment) %>% 
+  summarise(n=n(),
+            mean = ci(donation)[1], 
+                      lowCI = ci(donation)[2],
+                      hiCI = ci(donation)[3]
+                      )
+cis_dp %>%  kable(caption = "Mean/ci of donations by treatment combination, all data", digits=1) %>% kable_styling()
+
+
+cis_dp_geocorrect <- sx_dp %>%  
+  filter(attn_geog_qn=="Latin America and Africa") %>% 
+  group_by(treatment) %>% 
+  summarise(n=n(),
+            mean = ci(donation)[1], 
+                      lowCI = ci(donation)[2],
+                      hiCI = ci(donation)[3]
+                      )
+cis_dp_geocorrect %>% kable(caption = "Mean/ci of donations by treatment combination, correct-geography answerers only", digits=1) %>% kable_styling()
+
+
+```
+
+
+### Crosstabs
+
+```{r Summary-stats-Donations, include=TRUE, paged.print=FALSE}
+
+(tab_don <- sx_dp %>%
+  tabyl(treat_image, donation) %>%
+  tabylstuff_nocol("Donations by image treatment"))
+
+(tab_don <- sx_dp %>%
+  tabyl(treat_eff_info, donation) %>%
+  tabylstuff_nocol("Donations by effectiveness treatment"))
+```
+
+
+31 Jul 2019, naive eyeballs: The above shows no striking differences by either treatment arm
+
+<br>
+
+**Donations by treatments, summary statistics:**
+
+```{r crosstab-Donations, include=TRUE, paged.print=FALSE}
+
+(tab_don_sum <- sx_dp %>% 
+  sumtab2_func_plus(donation, treat_image, treat_eff_info,"Donation: positive % | mean, med--p75 | (sd) [N] "))
+
+(tab_don_sum <- sx_dp %>% 
+  sumtab2_func_plus(don_river, treat_image, treat_eff_info,"River-blindness donation: positive %, mean, med--p75 (sd) [N]"))
+
+(tab_don_sum <- sx_dp %>% 
+  sumtab2_func_plus(don_guide_dogs, treat_image, treat_eff_info,"Guide-dogs donation: positive %, mean, med--p75 (sd) [N]"))
+
+
+```
+
+
+31 Jul 2019, naive eyeballs: The image *seems* to have lead to some increase in incidence of giving to River-Blindness, and some decrease in the incidence of giving to Guide-Dogs. This effect appears similar in each arm of the information treatment.
+
+### Histograms
+
+**Histograms: Overall distribution of donations**
+
+```{r overallhist}
+
+ggplot(data=sx_dp, aes(sx_dp$donation)) +  geom_histogram()
+
+```
+
+31 Jul 2019, naive eyeballs: Donations show some clustering at round numbers: 5, 10, 20, 25, and 50. However, the 'give the middle amount (25)' cluster is roughly the same size as the 'give 10' clusters.   
+
+**Histograms: Overall donations by treatments:**
+
+```{r hist_by_treat_don}
+
+plot_multi_histogram(sx_dp, "donation", "treat_image")
+plot_multi_histogram(sx_dp, "donation", "treat_eff_info")
+
+```
+
+31 Jul 2019, naive eyeballs: The histograms show no striking differences by either treatment arm, although we see some differences in the rate of giving £10.
+
+
+**Histogram of donations by Image treatment, within info treatment**
+
+````{r hist_by_image_for_infotreat}
+
+plot_multi_histogram(filter(sx_dp, treat_eff_info=="Info"), "donation", "treat_image")
+
+```
+
+**Histogram by Image treatment, within no-info treatment**
+
+````{r hist_by_image_for_noinfotreat}
+
+plot_multi_histogram(filter(sx_dp, treat_eff_info=="No info"), "donation", "treat_image")
+
+```
+
+31 Jul 2019 -- no striking difference 
+
+**Histograms: Donations to each charity by treatments**
+
+```{r hist_by_treat_chars}
+
+pp("...to guide dogs")
+plot_multi_histogram(sx_dp, "don_guide_dogs", "treat_image")
+plot_multi_histogram(sx_dp, "don_guide_dogs", "treat_eff_info")
+
+pp("...  to river blindness")
+plot_multi_histogram(sx_dp, "don_river", "treat_image")
+plot_multi_histogram(sx_dp, "don_river", "treat_eff_info")
+
+```
+
+
+31 Jul 2019, naive eyeballs: 
+
+- for River-blindness, it looks like 
+  - the Image treatment causes a slight increase in the frequency of the smallest donations
+  - the Effectiveness treatment caused a slight increase in the frequency of £10 donations
+
+
+## Test for normality of donation outcome
+
+```{r Diagnostic-tests, include=TRUE}
+
+sx_dp_shapiro <- shapiro.test(sx_dp$donation)
+
+```
+
+The results from the Shapiro Wilk normality test ...
+
+The p-values are  `r sx_dp_shapiro[2]` suggesting this data `r ifelse(sx_dp_shapiro[2]<0.10, "is not", "is")` normal.
+
+  
+# Main systematic analysis
+
+## Working notation 
+
+...referring both to the population/true values and to the empirical equivalents of these in our experiment.
+
+*Note, this comes largely from our PaP, but I'm adjusting some notation to agree with column names here.*
+
+<br> 
+
+Our 2x2 design yields four combination treatments (column `treatment`):
+
+`r sx_dp %>% tabyl(treatment)`
+
+Below, $I$: `treat_image`, $C$: `treat_eff_info`
+
+1. No treatments (control); $I=0, C=0$ 
+2. I(mage); I=1, C=0
+3. C(ost information); I=0, C=1
+4. I+C; I=1, C=1
+
+$Y$: An outcome in general;
+$I$: Image treatment $(0,1)$, 
+$C$: Cost information treatment $(0,1)$;
+Expected value/average function $E()$, 
+and conditioning/subsamples “$|$” operator
+
+<br>
+
+**Treatment effects**
+
+i. $TE[Y](C|I=0)= E(Y|C=1,I=0) - E(Y|C=0,I=0)$ --- *impact of C in the absence of I*
+
+ii. $TE[Y](C|I=1) = E(Y|C=1,I=1) - E(Y|C=0,I=1)$ --- *impact of C in the presence of I*
+
+iii. $ATE[Y](C)= E(Y|C=1) - E(Y|C=0)$ --- *impact of C overall, averaging across its impact in the absence/presence of E*
+
+<br>
+
+Outcome variables (“Y’s”):
+
+- $d_r$, $d_g$: Individual’s donation amount (in £) to river-blindness (r) & guide-dogs (g) charities, respectively --- `don_river`, `don_guide_dogs` 
+
+- $D_r$, $D_g$: Indicator $\{0,1\}$ for whether individual donated a positive amount to r & g charities, respectively --- `d_don_river`,`d_don_guide_dogs`
+
+- $d_t = d_r+d_g$ : Individual’s total donation
+  - `donation`
+  
+- $D_t = D_r + D_g$: Indicator $\{0,1\}$ for whether individual donated to either charity (Note: individual can choose to donate to at most one charity.) --- `d_donation`
+   
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 15px; padding: 20px;}
+</style>
+<div class = "blue">
+
+**PAP:**
+
+*NOTE: some adjustments made to improve notation only*
+
+## H1. Information about the cost effectiveness of two charities…
+
+### a. causes a greater probability of donating to the more effective one, with or without the presence of the image treatment 
+For the ‘participation’ in donating to river-blindness outcome, we predict (for the following conditioning groups, abusing notation a bit)
+
+$\{C=1, I=0\} > \{C=I=0\}$
+
+and $\{C=I=1\} > \{C=0, I=1\}$
+
+which implies	$ATE[D_r](C) > 0$; thus we will use this ‘pooled’ empirical comparison.
+
+<br>
+
+I.e., the population mean of `d_don_river` in the `treat_eff_info=="Info"` treatment 
+
+which, in our sample  = `r mean(sx_dp$d_don_river[sx_dp$treat_eff_info=="Info"])` 
+
+was predicted to exceed the mean of this variable in the "no info" treatment, 
+
+which, in our sample  = `r mean(sx_dp$d_don_river[sx_dp$treat_eff_info=="No info"])`.
+
+### b. causes a smaller probability of donating to the less effective one,
+
+- For the ‘participation’ in donating to guide dogs outcome, we predict
+- C < control,
+- C + I < I,
+- which implies $ATE[D_g](C) < 0 \rightarrow$  ‘pooled’ empirical comparison
+(Recall that the participant must choose to donate to one or neither of the charities; they cannot donate to both)
+
+(We focus on this pooled empirical comparison below.)
+
+### Testing H1 (incidence of donation) 
+
+**H1a-b $\rightarrow$ Fisher tests, River Blindness and Guide-dog donation incidence by Effectiveness**
+
+(also generating results for incidence of each by Image)
+
+```{r Fisher-tests-incidence-chars, include=TRUE, warning=FALSE}
+
+(rb_inc_by_eff <- sx_dp %>% tabyl(treat_eff_info, d_don_river) %>% 
+  knitr::kable(caption = "River-blindness donation incidence by effectiveness info", digits = 0) %>%
+  kable_styling())
+
+(gd_inc_by_eff <- sx_dp  %>% tabyl(treat_eff_info, d_don_guide_dogs) %>% 
+knitr::kable(caption = "Guide-dogs donation incidence by effectiveness info", digits = 0) %>%
+  kable_styling())
+
+(rb_inc_by_image <- sx_dp %>% tabyl(treat_image, d_don_river) %>% 
+  knitr::kable(caption = "River-blindness donation incidence by effectiveness info", digits = 0) %>%
+  kable_styling())
+
+(gd_inc_by_eff <- sx_dp  %>% tabyl(treat_image, d_don_guide_dogs) %>% 
+knitr::kable(caption = "Guide-dogs donation incidence by effectiveness info", digits = 0) %>%
+  kable_styling())
+
+FT_treat_eff_info_river <- fisher.bintest(d_don_river ~ treat_eff_info, sx_dp, alpha = 0.05, p.method = "fdr")
+FT_treat_eff_info_gd <- fisher.bintest(d_don_guide_dogs ~ treat_eff_info, sx_dp, alpha = 0.05, p.method = "fdr")
+FT_treat_image_river <- fisher.bintest(d_don_river ~ treat_image, sx_dp, alpha = 0.05, p.method = "fdr")
+FT_treat_image_gd <- fisher.bintest(d_don_guide_dogs ~ treat_image, sx_dp, alpha = 0.05, p.method = "fdr")
+
+FT_chars <- list(FT_treat_eff_info_river, FT_treat_eff_info_gd,FT_treat_image_river,FT_treat_image_gd)
+FTnames <- c("Effectiveness: RB", "Effectiveness: GD", "Image: RB", "Image: GD")
+
+FT_chars[[1]]$method <- "Fisher"
+FT_chars[[2]]$method <- "Fisher"
+FT_chars[[3]]$method <- "Fisher"
+FT_chars[[4]]$method <- "Fisher"
+
+FT_chars  <- map2(FT_chars, FTnames, function(x, y) {
+  broom::tidy(x) %>% add_column(Experiment = y)
+}) 
+
+#todo: make this dplyr/tidy/pipey
+
+
+  
+FT_chars <- FT_chars%>%
+  bind_rows() %>%
+  kable(, caption = "Donation incidence by Image and Effectiveness-info treatments; Fisher tests", digits = 2) %>%
+  kable_styling()
+
+FT_chars
+
+```
+
+31 Jul 2019: The Fisher tests reported above do not show a substantial difference in either case, failing to confirm H1a and H1b. However, examining, the 95% confidence intervals, we also can not rule out a substantial effect (in either direction). These CI's encompass odds roughly between 3:2 and 2:3. 
+
+Ex-post, our experiment appears under-powered for testing this hypothesis (note that our sample size was also less than the desired size).
+
+## H2. Empathy-evoking images increase the propensity to donate a positive amount (rather than not donate); i.e., a greater 'donation incidence',
+
+For the ‘donate something’ outcome, we predict
+
+- E > control
+- E + C > E
+- which implies ATE[D_t](E) > 0, $\rightarrow$  ‘pooled’ empirical comparison
+
+**Testing H2: Computing Fisher tests for OVERALL donation incidence**
+
+```{r Fisher-tests-donation-incidence, include=TRUE, warning=FALSE}
+
+options(digits = 3)
+
+don_inc <- sx_dp %>% 
+  group_by(treat_image, treat_eff_info) %>% 
+  dplyr::summarize(donated = mean(as.numeric(d_donation))-1, don_gd = mean(as.numeric(d_don_guide_dogs))-1, don_river = mean(as.numeric(d_don_river))-1, n=n()) %>% 
+  kable() %>%
+  kable_styling()
+
+
+#info
+
+sx_dp %>% tabyl(treat_eff_info,d_donation) %>% 
+knitr::kable(, caption = "Donation incidence by effectiveness info", digits = 0) %>%
+  kable_styling()
+
+FT_treat_info_only <- fisher.bintest(d_donation ~ treat_eff_info, filter(sx_dp,treat_image=="No image"), alpha = 0.05, p.method = "fdr")
+
+FT_treat_add_info <- fisher.bintest(d_donation ~ treat_eff_info, filter(sx_dp,treat_image=="Image"), alpha = 0.05, p.method = "fdr")
+ 
+
+FT_treat_eff_info <- fisher.bintest(d_donation ~ treat_eff_info, sx_dp, alpha = 0.05, p.method = "fdr")
+
+FT <- list(FT_treat_info_only, FT_treat_add_info, FT_treat_eff_info)
+FTnames <- c("Effectiveness vs control", "Effectiveness| Image present", "Effectiveness (pooled)")
+FT <- map2(FT, FTnames, function(x, y) {
+  broom::tidy(x) %>% add_column(Experiment = y)
+}) 
+
+FT[[1]]$method <- "Fisher"
+FT[[2]]$method <- "Fisher"
+FT[[3]]$method <- "Fisher"
+
+FT <- FT %>% 
+  bind_rows() %>%
+  kable(, caption = "Donation incidence by Effectiveness-info treatments; Fisher tests", digits = 2) %>%
+  kable_styling()
+
+FT
+```
+
+
+31 Jul 2019: The relevant Fisher tests are reported in the table above. 
+We can not confirm H2 nor any of its component hypotheses. As for H1, we also have wide confidence intervals.
+
+```{r Fisher-tests-incidence, include=TRUE, warning=FALSE}
+
+sx_dp %>% tabyl(treat_eff_info, d_don_river) %>% 
+  knitr::kable(caption = "River-blindness donation incidence by effectiveness info", digits = 0) %>%
+  kable_styling()
+
+sx_dp %>% tabyl(treat_eff_info, d_don_guide_dogs) %>% 
+knitr::kable(caption = "Guide-dogs donation incidence by effectiveness info", digits = 0) %>%
+  kable_styling()
+
+FT_treat_eff_info_river <- fisher.bintest(d_don_river ~ treat_eff_info, sx_dp, alpha = 0.05, p.method = "fdr")
+FT_treat_eff_info_gd <- fisher.bintest(d_don_guide_dogs ~ treat_eff_info, sx_dp, alpha = 0.05, p.method = "fdr")
+
+FT_chars_ef <- list(FT_treat_eff_info_river, FT_treat_eff_info_gd)
+FTnames <- c("Effectiveness: RB", "Effectiveness: GD")
+
+FT_chars_ef  <- map2(FT_chars, FTnames, function(x, y) {
+  broom::tidy(x) %>% add_column(Experiment = y)
+}) 
+
+#todo: make this dplyr/tidy/pipey
+
+FT_chars_ef[[1]]$method <- "Fisher"
+FT_chars_ef[[2]]$method <- "Fisher"
+  
+FT_chars_ef_k <- FT_chars_ef%>%
+  bind_rows() %>%
+  kable(, caption = "Donation incidence by Image and Effectiveness-info treatments; Fisher tests", digits = 2) %>%
+  kable_styling()
+
+FT_chars_ef_k
+
+```
+
+## H3. Cost effectiveness information interacts with the empathy-inducing image such that an image alone generates greater donation amounts compared to image combined with effectiveness information
+
+Equivalently, adding Cost to Empathy reduces donation (incidence and amounts) relative to Empathy alone.
+
+- We predict, for both the ‘total amount donated’ and ‘donate something’ outcomes: I > I+C Similarly,
+a. TE[d_t](C|I=1) < 0
+b. TE[D_t](C|I=1) < 0
+
+
+# Todo: incorporate work below into systematic PaP-based analysis 
+
+## Simple statistical tests for treatment differences
+
+```{r treatment-differences--Statistical-tests-without-controls, include=TRUE, warning=FALSE}
+
+# t-test Donations
+
+pp("Defining treatment combinations here")
+
+TreatCombinations <- split(combn(levels(sx_dp$treatment), 2), rep(1:ncol(combn(levels(sx_dp$treatment), 2)), each = nrow(combn(levels(sx_dp$treatment), 2)))) # get treatment combinations into a list of column vectors
+
+pp("Key comparisons")
+
+
+```
+
+## Plotting contributions by treatments
+
+```{r Plots, out.width=c('50%', '50%'), fig.show='hold', include=TRUE, warning=FALSE}
+
+# todo: sx_dp/EX/GT together?
+
+#DotPlotsxcolours <- c( `No ask-Domestic` = "red2", `No ask-Internat.` = "blue3", )
+#DotPlotsxshapes <- c( `No ask-Domestic` = 0, `No ask-Internat.` = 1, )
+
+# (DotPlotsx17 <- sx_dp %>%
+#   mutate(stage = as.numeric(stage)) %>%
+#   filter(treatment != "No ask-Attrite", year == 2017) %>%
+#   dotplot_func(donation, stage, treatment, "Essex 2017: mean donations by stage, treatment, attrition") +
+#   scale_colour_manual(values = DotPlotsxcolours) +
+#   scale_shape_manual(values = DotPlotsxshapes))
+
+```
+
+## Boxplots: donation by treatment, tests of differences
+
+```{r boxplots, include=TRUE, warning=FALSE }
+
+(BoxPlots_dp_image<- sx_dp %>%
+  boxplot_func_m(donation, treat_image, comparisons = list(c("Image", "No image"))) +
+  ylab("Donation")) 
+
+(BoxPlots_dp_info <- sx_dp %>%
+  boxplot_func_m(donation, treat_eff_info, comparisons = list(c("Info", "No info"))) +
+  ylab("Donation"))
+
+(BoxPlots_dp <- sx_dp %>%
+  boxplot_func_m(donation, treatment, comparisons = list(c("Control", "Image only"), c("Control", "Info only"), c("Control", "Image-Info"), c("Image only", "Image-Info"))) +
+  ylab("Donation"))
+
+```
+
+Donations to guide dogs only:
+
+```{r boxplotsgd, include=TRUE, warning=FALSE }
+
+(BoxPlots_dp_image_gd<- sx_dp %>%
+  boxplot_func_m(don_guide_dogs, treat_image, comparisons = list(c("Image", "No image"))) +
+  ylab("Donations: guide dogs"))
+
+(BoxPlots_dp_info_gd <- sx_dp %>%
+  boxplot_func_m(don_guide_dogs, treat_eff_info, comparisons = list(c("Info", "No info"))) +
+  ylab("Donations: guide dogs"))
+
+(BoxPlots_dp_gd <- sx_dp %>%
+  boxplot_func_m(don_guide_dogs, treatment, comparisons = list(c("Control", "Image only"), c("Control", "Info only"), c("Control", "Image-Info"), c("Image only", "Image-Info"))) +
+  ylab("Donations: guide dogs"))
+```
+
+
+```{r boxplotsrb, include=TRUE, warning=FALSE }
+
+pp("Donations to river blindness only")
+
+(BoxPlots_dp_image_rb <- sx_dp %>%
+  boxplot_func_m(don_river, treat_image, comparisons = list(c("Image", "No image"))) +
+  ylab("Donations: river blindness"))
+
+(BoxPlots_dp_info_rb <- sx_dp %>%
+  boxplot_func_m(don_river, treat_eff_info, comparisons = list(c("Info", "No info"))) +
+  ylab("Donations: river blindness"))
+
+(BoxPlots_dp_rb <- sx_dp %>%
+  boxplot_func_m(don_river, treatment, comparisons = list(c("Control", "Image only"), c("Control", "Info only"), c("Control", "Image-Info"), c("Image only", "Image-Info"))) +
+  ylab("Donations: river blindness"))
+
+```
+
+*Comments on previous chunk:*
+
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+<div class = "blue">
+
+PAP: 
+</div>
+
+<br><br>
+
+Boxplot comparisons ... faceted 
+
+BELOW: code not evaluated (old)
+```{r CDF Ask-vs-no-ask, eval = FALSE, echo = TRUE, warning=FALSE, fig.height=5,fig.align='center'}
+
+#BELOW: code not evaluated (old)
+
+# Todo: let's line these up side by side - 2017, 2019, pooled
+# PlotAskNoAsk <- sxB %>% ggplot(aes(donation, colour = treat_no_ask)) +
+#  stat_ecdf(geom = "step")
+
+comparisons <- list(c("Asked", "No ask"))
+bpltDon_17 <- sx_dp %>%
+  filter(year == 2017, stage == "2", d_attrited == 0) %>%
+  boxplot_func(donation, treat_no_ask, comparisons = comparisons) + ylab("Donation")
+bpltDon_17
+bpltDon_19 <- sx_dp %>%
+  filter(year == 2019, stage == "2", d_attrited == 0) %>%
+  boxplot_func_m(donation, treat_no_ask, comparisons = comparisons) +
+  ylab("Donation")
+bpltDon_19
+# ...ggboxplot(x = "treat_no_ask", y = "donation", color = "treat_no_ask", palette =c("#00AFBB", "#E7B800"), shape = "treat_no_ask") + stat_compare_means(label="t.test", comparisons = comparisons, method = "t.test")
+
+bpltDon_17_19 <- sx_dp %>%
+  filter(stage == "2", d_attrited == 0) %>%
+  boxplot_func(donation, treat_no_ask, comparisons = comparisons) + ylab("Donation")
+bpltDon_17_19
+#############################################
+
+sx_dp$student <- fct_recode(sx_dp$student, "Student" = "1", "Non student" = "0")
+
+bplt_facet_Don_17_19 <- sx_dp %>%
+  filter(stage == "2", d_attrited == 0) %>%
+  ggplot(aes(treat_no_ask, donation)) +
+  geom_boxplot() +
+  ylab("Donation") +
+  stat_summary(
+    fun.y = mean, geom = "point", shape = 18,
+    size = 3, color = "red"
+  ) +
+  facet_grid(student ~ year)
+
+pp("By year and (2017) student status")
+
+bplt_facet_Don_17_19 <- sx_dp %>%
+  filter(stage == "2", d_attrited == 0) %>%
+  ggplot(aes(treat_no_ask, donation)) +
+  geom_boxplot() +
+  ylab("Donation") +
+  facet_grid(student ~ year) +
+  geom_signif(
+    comparisons = comparisons,
+    step_increase = c(.4), vjust = 1.7, margin_top = .7, textsize = 3
+  ) +
+  geom_signif(
+    comparisons = comparisons,
+    step_increase = c(.4), vjust = 0, margin_top = .7, textsize = 3, test = "t.test"
+  ) +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 14)
+  ) +
+  theme(axis.text.x = element_text(size = 12)) +
+  labs(title = "treatment", y = "donation", caption = "p-values of Wilcox-(below) and  t-test (above brackets)") +
+  stat_summary(
+    fun.y = mean, geom = "point", shape = 18,
+    size = 3, color = "red"
+  )
+bplt_facet_Don_17_19
+
+pp("by time delay between asks")
+bplt_facet_start_Don_19t <- sx_dp %>%
+  filter(stage == "2", d_attrited == 0, year == 2019) %>%
+  ggplot(aes(treat_no_ask, donation)) +
+  geom_boxplot() +
+  ylab("Donation") +
+  facet_grid(~ floor(btwn_invite_dur)) +
+  #  geom_signif(comparisons = comparisons,
+  #                step_increase = c(.4), vjust = 1.7, margin_top = .7, textsize = 3) +
+  #  geom_signif(comparisons = comparisons,
+  #              step_increase = c(.4), vjust = 0, margin_top = .7, textsize = 3, test = "t.test") +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 14)
+  ) +
+  theme(axis.text.x = element_text(size = 12)) +
+  labs(title = "treatment", y = "donation", caption = "p-values of Wilcox-(below) and  t-test (above brackets)") +
+  stat_summary(
+    fun.y = mean, geom = "point", shape = 18,
+    size = 3, color = "red"
+  )
+
+bplt_facet_start_Don_19t
+
+pp("by charity similarity")
+
+bplt_facet_similarity_Don_sim <- sx_dp %>%
+  drop_na(treat_sim_dif) %>%
+  filter(stage == "2", d_attrited == 0) %>%
+  ggplot(aes(treat_sim_dif, donation)) +
+  geom_boxplot() +
+  ylab("Donation") +
+  geom_signif(
+    comparisons = c(1, 2),
+    step_increase = c(.4), vjust = 1.7, margin_top = .7, textsize = 3
+  ) +
+  geom_signif(
+    comparisons = c(1, 2),
+    step_increase = c(.4), vjust = 0, margin_top = .7, textsize = 3, test = "t.test"
+  ) +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 14)
+  ) +
+  theme(axis.text.x = element_text(size = 12)) +
+  labs(title = "treatment", y = "donation", caption = "p-values of Wilcox-(below) and  t-test (above brackets)") +
+  stat_summary(
+    fun.y = mean, geom = "point", shape = 18,
+    size = 3, color = "red"
+  )
+
+bplt_facet_similarity_Don_sim
+
+pp("By charity similarity, total donations")
+bplt_facet_similarity_don_sim_tot <- sx_dp %>%
+  filter(stage == "2", d_attrited == 0) %>%
+  ggplot(aes(treat_sim_dif, total_don)) +
+  geom_boxplot() +
+  ylab("Total don") +
+  geom_signif(
+    comparisons = c(1, 2),
+    step_increase = c(.4), vjust = 1.7, margin_top = .7, textsize = 3
+  ) +
+  geom_signif(
+    comparisons = c(1, 2),
+    step_increase = c(.4), vjust = 0, margin_top = .7, textsize = 3, test = "t.test"
+  ) +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 14)
+  ) +
+  theme(axis.text.x = element_text(size = 12)) +
+  labs(title = "treatment", y = "Total don", caption = "p-values of Wilcox-(below) and  t-test (above brackets)") +
+  stat_summary(
+    fun.y = mean, geom = "point", shape = 18,
+    size = 3, color = "red"
+  )
+
+bplt_facet_similarity_don_sim_tot
+```
+
+
+Box plots, charity pairings (?)... 
+
+```{r fig-BoxPlotsx, eval = FALSE, fig.width = 10, fig.height = 5, fig.fullwidth = TRUE, message=FALSE, warning=FALSE}
+# todo: better ordering of treatments
+
+box_charpairings_17 <- sx_dp %>%
+  filter(year == 2017, stage == "2", d_attrited == 0) %>%
+  boxplot_func(donation, treatment, comparisons = list(c("No ask-Domestic", "Domestic-Domestic"), c("No ask-Internat.", "Internat.-Internat."))) +
+  ylab("Donation") +
+  stat_summary(
+    fun.y = mean, geom = "point", shape = 18,
+    size = 3, color = "red"
+  )
+box_charpairings_17
+
+box_charpairings_19 <- sx_dp %>%
+  filter(year == 2019, stage == "2", d_attrited == 0) %>%
+  boxplot_func(donation, treatment, comparisons = list(c("No ask-Domestic", "Domestic-Domestic"), c("No ask-Internat.", "Internat.-Internat."))) +
+  ylab("Donation") +
+  stat_summary(
+    fun.y = mean, geom = "point", shape = 18,
+    size = 3, color = "red"
+  )
+box_charpairings_19
+
+box_charpairings_17_19 <- sx_dp %>%
+  filter(stage == "2", d_attrited == 0) %>%
+  boxplot_func(donation, treatment, comparisons = list(c("No ask-Domestic", "Domestic-Domestic"), c("No ask-Internat.", "Internat.-Internat."))) +
+  ylab("Donation") +
+  stat_summary(
+    fun.y = mean, geom = "point", shape = 18,
+    size = 3, color = "red"
+  )
+
+box_charpairings_17_19
+
+box_similar_19 <- sx_dp %>%
+  filter(year == 2019, stage == "2", d_attrited == 0) %>%
+  boxplot_func(donation, treat_sim, comparisons = list(c("No ask", "Similar"), c("No ask", "Different"))) +
+  stat_summary(
+    fun.y = mean, geom = "point", shape = 18,
+    size = 3, color = "red"
+  ) +
+  ylab("Donation")
+box_similar_19
+```
+
+## Regression analysis
+
+Below, we (plan to) run the 'matrix' of regressions (iterate function?) for
+
+- outcomes
+- pooled/disagreggated treatments
+- functional forms ...? linear, Poisson-exponential, (tobit), (quantile?)
+- no 'noise-reduction' controls, ad-hoc controls, model-fit controls (Ridge Regression with regularization over noise variables only)
+
+
+Work on creating recipes...
+
+```{r recipe-working, eval = FALSE}
+
+sxm <- sx_dp %>% select(donation, d_donation, total_don, firstasktreat, matches("treat|decision|btwn|dur|aid|EyesCorrectPct|^d_|country_birth|student|salaryrequest_1|ask|dur|educ|mom|dad|political|worth|respect|trust|risk|satisfaction|no_good|redist|private_redist|^uk|tax_share|children|birth_nation", -matches("seconds|sbeforeask|dur_survey.2|Duration (in seconds).2|lose|mx25|beforeask")),  to_snake_case(hroot_vars))
+
+# sx_r <- recipes::recipe(donation+d_donation+total_don~., data = sxm) %>%
+#   step_meanimpute(all_numeric(), -all_outcomes()) %>%  step_knnimpute(all_nominal()) %>%  step_center(all_numeric(), -all_outcomes()) %>% step_scale(all_numeric(), -all_outcomes()) %>%  step_other(all_nominal()) %>% #all nominal variables with lt 5% ofgg obs --> other
+#   prep(training = sxm) %>%  recipes::bake(sxm)
+```
+
+### 'regular' regressions
+
+(some regressions put into tables with Huxtable below)
+
+(Regressions-with-controls-not-for-lee)
+
+```{r regular_regs_sxdp, eval=FALSE, include=TRUE}
+
+# create design matrix
+# rec_donationSX in recipes.R
+
+# suppressWarnings(try(sxprep <- prep(rec_donationSX, retain = TRUE) %>% juice()))
+
+# trying out simple models-- cut?
+
+model0 <- lm(donation ~ treat_image+treat_eff_info, data = sx_dp)
+model1 <- lm(donation ~ treat_image*treat_eff_info, data = sx_dp)
+model2 <- lm(don_guide_dogs ~  treat_image*treat_eff_info + d_river_1st, data = sx_dp) 
+model3 <- lm(don_river ~  treat_image*treat_eff_info + d_river_1st, data = sx_dp) 
+
+hux_ols_don <- huxreg(model0,model1, model2, model3, ci_level = .95, error_format = "[{conf.low}, {conf.high}]")
+
+hux_ols_don
+# todo - format this table with kable
+
+IndepVars <- paste(ControlsAdhocEsx, collapse = " + ") %>%
+  paste("~", .)
+
+ControlsAdhocEsx_dp <- c("sex", "age", "race", "P_Sympathetic_Warm", "essex_uni_student", "EyesCorrectPct", "V_benevolence", "V_universalism", "trust", "risk_willingness", "self_worth", "decision_mode", "mood_order_treat_1", "mood_order_treat")
+
+# variables "childpresentmdl", "clustergroup"
+
+IndepVars_s <- paste(ControlsAdhocEsxs, collapse = " + ") %>%
+  paste("~", .)
+
+# Second stage total/incidence
+# Overall effect of first ask
+# Decision mode
+
+######################################################################
+
+pp("Overall effect of first ask on second donation:")
+
+ols_don_tr_noask <- lm(donation ~ treat_no_ask, data = sx_dp %>% filter(stage == "2"))
+ols_don_tr_noask_2017 <- lm(donation ~ treat_no_ask, data = sx_dp %>% filter(stage == "2" & year == 2017))
+ols_don_tr_noask_2019 <- lm(donation ~ treat_no_ask, data = sx_dp %>% filter(stage == "2" & year == 2019))
+
+hux_ols_don_tr_noask <- huxreg("Pooled" = ols_don_tr_noask, "2017" = ols_don_tr_noask_2017, "2019" = ols_don_tr_noask_2019, ci_level = .95, error_format = "[{conf.low}, {conf.high}]")
+
+hux_ols_don_tr_noask
+
+ols_dond_tr_noask <- lm(as.double(d_donation) ~ treat_no_ask, data = sx_dp %>% filter(stage == "2"))
+ols_dond_tr_noask_2017 <- lm(as.double(d_donation) ~ treat_no_ask, data = sx_dp %>% filter(stage == "2" & year == 2017))
+ols_dond_tr_noask_2019 <- lm(as.double(d_donation) ~ treat_no_ask, data = sx_dp %>% filter(stage == "2" & year == 2019))
+
+hux_ols_dond_tr_noask <- huxreg("Pooled" = ols_dond_tr_noask, "2017" = ols_dond_tr_noask_2017, "2019" = ols_dond_tr_noask_2019, ci_level = .95, error_format = "[{conf.low}, {conf.high}]")
+
+
+pp("Overall effect of first ask on second donation INCIDENCE:")
+
+hux_ols_dond_tr_noask
+
+pp("By SIMILARITY:")
+
+ols_don_sim_noask <- lm(donation ~ treat_sim, data = sx_dp %>% filter(stage == "2"))
+ols_don_sim_noask_2017 <- lm(donation ~ treat_sim, data = sx_dp %>% filter(stage == "2" & year == 2017))
+ols_don_sim_noask_2019 <- lm(donation ~ treat_sim, data = sx_dp %>% filter(stage == "2" & year == 2019))
+
+hux_ols_don_sim_noask <- huxreg("Pooled" = ols_don_sim_noask, "2017" = ols_don_sim_noask_2017, "2019" = ols_don_sim_noask_2019, ci_level = .95, error_format = "[{conf.low}, {conf.high}]")
+
+hux_ols_don_sim_noask
+
+pp("Overall effect of first ask on TOTAL donation, by similarity")
+
+ols_tdon_sim_noask <- lm(total_don ~ treat_sim, data = sx_dp %>% filter(stage == "2"))
+ols_tdon_sim_noask_2017 <- lm(total_don ~ treat_sim, data = sx_dp %>% filter(stage == "2" & year == 2017))
+ols_tdon_sim_noask_2019 <- lm(total_don ~ treat_sim, data = sx_dp %>% filter(stage == "2" & year == 2019))
+
+hux_ols_tdon_sim_noask <- huxreg("Pooled" = ols_tdon_sim_noask, "2017" = ols_tdon_sim_noask_2017, "2019" = ols_tdon_sim_noask_2019, ci_level = .95, error_format = "[{conf.low}, {conf.high}]")
+
+hux_ols_tdon_sim_noask
+
+
+# Overall by time differential
+pp("# Overall by time differential")
+
+ols_don_noaskXdur_2019 <- lm(donation ~ treat_no_ask * as.factor(round(btwn_invite_dur)), data = sx_dp %>% filter(stage == "2" & year == 2019))
+
+hux_ols_don_noaskXdur_2019 <- huxreg(ols_don_noaskXdur_2019)
+# hux_ols_don_noaskXdur_2019
+
+huxreg(ols_don_noaskXdur_2019, ci_level = .95, error_format = "[{conf.low}, {conf.high}]")
+
+# Decision mode
+pp("Decision mode")
+
+ols_don_noaskXdec_mode_2019 <- lm(donation ~ treat_no_ask * d_decis_intu, data = sx_dp %>% filter(stage == "2" & year == 2019))
+
+ols_don_simXdec_mode_2019 <- lm(donation ~ treat_sim * d_decis_intu, data = sx_dp %>% filter(stage == "2" & year == 2019))
+
+huxreg(ols_don_noaskXdec_mode_2019, ols_don_simXdec_mode_2019)
+
+
+CrossReg <- cross2(DonOutVars, IndepVars_s) %>%
+  map(purrr::lift(paste)) %>%
+  unlist() # sets up linear model arguments for each of the DonOutVars
+
+linreg <- function(relation) {
+  # regstr <- paste(DepVar, " ~ ", )
+  model <- lm(as.formula(relation), data = subset(sx_dp, stage == "2"))
+  model
+}
+
+# try(models <- map(CrossReg, linreg)) # runs lm for each of "CrossReg" models
+# if you include the varls  "childpresentmdl", "clustergroup" --> Error in `contrasts<-`(`*tmp*`, value = contr.funs[1 + isOF[nn]]) :  contrasts can be applied only to factors with 2 or more levels
+# ... these (and all varls) need to be imputed where missing
+
+sx_fixNA <- sx_dp %>% NA_preproc()
+
+lik7_levels <- c("Disagree Strongly", "Disagree Moderately", "Disagree a little", "Neither agree nor disagre", "Agree a little", "Agree Moderately", "Agree Strongly")
+
+# sx_fixNA <- sx_dp %>% NA_preproc()
+# sxcplt <- sx_fixNA[complete.cases(as.data.frame(sx_fixNA[ControlsEsxFitme])), ]
+
+# NOTE: this is only a temporary solution -- we need to impute missings!
+
+# ...first *with* treatment
+
+# ...next *without* treatment, create quantiles to feed into Lee bounds
+```
+
+
+standard errors...Need to look more closely at this, see what we preregistered in terms of including controls (e.g., for Pat’s treatment) and sensitivity to outliers (is negative binomial better?).
+
+Consider upper bounds 
+
+
+Robustness checks matrix?
+
+```{r Creating-matrix-of-robustness-checks-for-alternate-specifications--inclusion-criteria}
+
+# Logistic regression
+# S1.logist <- glm(S1.Contrib ~ relevel(Shares, ref="High") + GroupRelationship, family=binomial(link='logit'), data=d)
+# summary(S1.logist)
+# confint(S1.logist, level=0.95)
+# anova(S1.logist, test="Chisq") #not sure what this part does
+```
+
+## Differentiation of estimated effects (heterogeneity, interactions)
+
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+<div class = "blue">
+
+PaP: ...
+
+</div>
+
+### Regressions-- "honest" differentiation (cross-validated and adjusted for mht), considering nonlinearity
+
+```{r honest-differentiation-nonlinearity}
+
+#' by personality attributes that previous literature find are associated with analytical versus emotional decision-making.
+
+#' also bifurcate our estimates by these categories (gender, indicated religious affiliation vs. agnostic/atheist).'
+
+# by students and nonstudents
+```
+
+## Mediation analysis (exploratory)
+
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+<div class = "blue">
+
+PAP: 
+...
+<\div>
+
+```{r Mediation-analysis}
+
+```
+
+## 'Conditional on positive?': Bounding estimators
+
+- Ridge regressions to generate 'quantiles of predicted donations'
+- ... to use in Lee bound estimators with controls
+
+```{r ridge-and-preparation-for-Lee-bound-estimator, eval=FALSE, warning=FALSE, include=FALSE}
+
+# Ridge following instructions from <https://drsimonj.svbtle.com/ridge-regression-with-glm_net>
+
+# SXAH_r <- SXAH_r %>%
+#   select_if(function(x) !(all(is.na(x)) | all(x == ""))) %>%
+#   purrr::keep(is.numeric) # Drop non-numeric and always-missing
+# # rem: SXAH_r generated in Recipes.R
+
+# SXAHnoatr <- SXAH_r %>% filter(!is.na(donation))
+# y <- SXAHnoatr %>%
+#   filter(!is.na(donation)) %>%
+#   select(donation) %>%
+# data.matrix()
+
+# kitchen sink of pre-determined non-treatment variables
+x_df <- SXAHnoatr %>% dplyr::select(-one_of(sx_outcomes_ah), -one_of(sx_treatments_ah))
+x <- x_df %>% data.matrix()
+
+lambdas <- 10^seq(3, -2, by = -.1)
+
+library(glmnet)
+
+pp("Having conformability issues here")
+
+MSEs <- NULL
+for (i in 1:50) {
+  cv_fit <- cv.glmnet(x, y, alpha = 0, lambda = lambdas, standardize = TRUE, nfolds = 4)
+  MSEs <- cbind(MSEs, cv_fit$cvm)
+}
+# rownames(MSEs) <- cv_fit$lambda
+lambda.min <- as.numeric(names(which.min(rowMeans(MSEs))))
+
+# todo: generate predictions for all obs (including attriters), put into quantile bins
+# opt_lambda <- cv_fit$lambda.min
+fit <- cv_fit$glmnet.fit
+y_predicted <- predict(fit, s = lambda.min, newx = x)
+sst <- sum((y - mean(y))^2)
+# sse <- sum((y_predicted - y)^2)
+# R squared
+# rsq <- 1 - sse / sst
+
+print("(naive) rsq of CV ridge model:")
+# rsq
+
+# generate predictions for all obs including attriters?
+x_all <- SXAH_r %>%
+  dplyr::select(-one_of(sx_outcomes_ah), -one_of(sx_treatments_ah)) %>%
+  data.matrix()
+y_predicted <- predict(fit, newdata = SXAH_r, s = lambda.min, newx = x_all)
+
+# Putting back into a data frame to use in Lee
+xdf <- x_all %>% as.data.frame(as.table(.))
+y_predicted <- y_predicted %>% as.data.frame(.)
+colnames(y_predicted) <- c("y_predict") # not tidy
+SXAH_pr <- bind_cols(y_predicted, SXAH)
+
+# Make quantiles of prediction, merge back into data to use in lee bounds
+SXAH_pr$Q10_y_predict <- CutQ(SXAH_pr$y_predict, breaks = quantile(SXAH_pr$y_predict, seq(0, 1, by = 0.1)))
+SXAH_pr$Q5_y_predict <- CutQ(SXAH_pr$y_predict, breaks = quantile(SXAH_pr$y_predict, seq(0, 1, by = 0.2)))
+
+# DR: I can't get this to work with dplyr  ??mutate(percrank=rank(value)/length(value))
+
+SXAH_pr_l <- SXAH_pr %>% dplyr::select("treatment", "treat_no_ask", "donation", "d_attrited", "stage", "student", "Q10_y_predict", "Q5_y_predict", "y_predict", "sex", "treat_second_ask_noa", "Treat_Int_Dom")
+```
+
+
+```{r lee-bound-estimation, eval=FALSE, warning=FALSE, include=FALSE}
+
+# stata code
+if (Sys.info()["sysname"] == "Darwin") {
+  options("RStata.StataPath" = "/Applications/Stata/StataSE.app/Contents/MacOS/stata-se")
+  stataver <- 15
+} else {
+  options("RStata.StataPath" = "/usr/local/stata14/stata-se")
+  stataver <- 14
+}
+
+p_load(RStata)
+# Todo: get these estimates to code a value for "NA's"
+
+# this is our 'best' one; but I did fish it # stata(src = stata_leebound, data.in = sxdta, stata.version = stataver)
+
+pp("students and nonstudents together;  deciles of predicted donations (from ridge) used to tighten Lee bounds:")
+
+stata_leebound <- "leebounds donation treat_no_ask if stage == "2" , tight(Q10_y_predict) cie level(95)"
+stata(src = stata_leebound, data.in = SXAH_pr_l, stata.version = stataver)
+
+pp("Same as above, bootstrapped:")
+stata_leebound <- "leebounds donation treat_no_ask if stage == "2" , tight(Q10_y_predict) cie level(95) vce(boot, reps(100))"
+stata(src = stata_leebound, data.in = SXAH_pr_l, stata.version = stataver)
+
+pp("Compare to standard linear models, with and without the 2nd ask treatment dummy")
+
+mod_s2_x <- lm(donation ~ treat_no_ask + y_predict * student + Q5_y_predict * student + treat_second_ask_noa * student, data = SXAH_pr_l)
+
+mod_s2_x2 <- lm(donation ~ treatment + y_predict * student + Q5_y_predict * student, data = SXAH_pr_l)
+
+huxreg(mod_s2_x, mod_s2_x2)
+
+pp("Lee bounds, for students, as above (equivalent predicted outcome tighteners, for this sample)")
+SXAH_pr_l_s <- SXAH_pr_l %>% filter(student == "Student")
+SXAH_pr_l_s$Q10s_y_predict <- CutQ(SXAH_pr_l_s$y_predict, breaks = quantile(SXAH_pr_l_s$y_predict, seq(0, 1, by = 0.1)))
+
+stata_leebound <- " leebounds donation treat_no_ask if stage == "2" , tight(Q10s_y_predict)  cie level(95)"
+stata(src = stata_leebound, data.in = SXAH_pr_l_s, stata.version = stataver)
+
+pp("Compare to a standard linear model:")
+lm(donation ~ treat_no_ask + y_predict + Q10s_y_predict + treat_second_ask_noa, data = SXAH_pr_l_s) %>% huxreg()
+
+pp("Lee bounds, for non-students, as above (equivalent predicted outcome tighteners, for this sample)")
+SXAH_pr_l_ns <- SXAH_pr_l %>% filter(student == "Non student")
+SXAH_pr_l_ns$Q5ns_y_predict <- CutQ(SXAH_pr_l_ns$y_predict, breaks = quantile(SXAH_pr_l_ns$y_predict, seq(0, 1, by = 0.2)))
+
+stata_leebound <- " leebounds donation treat_no_ask if stage == "2" , tight(Q5ns_y_predict)  cie level(95)"
+stata(src = stata_leebound, data.in = SXAH_pr_l_ns, stata.version = stataver)
+
+p_unload(RStata)
+
+```
+
+ attrition::estimator_trim, or stata? 
+
+# Additional results of interest - do elsewhere?
+
+```{r Additional-results-of-interest}
+
+```
+
+
+## Misc exploratory analysis of donations vs omnibus measures (do elsewhere)
+
+Note: We considered using these in blocking treatments; the work below was done for blocking a follow-on experiment.
+
+``` {r donation-vs-omnibus-exploratory, eval = FALSE}
+
+sx_dp %>%
+  filter(year == 2019, stage == "1") %>%
+  tabyl(schwartz_s_1_3) %>%
+  adorn_percentages("col") %>%
+  adorn_pct_formatting(digits = 2) %>%
+  adorn_ns() %>%
+  kable() %>%
+  kable_styling()
+
+"Donations by Schwartz empathy"
+sx_dp %>%
+  filter(year == 2019, stage == "1", treat_no_ask == "Asked") %>%
+  dplyr::group_by(schwartz_s_1_3) %>%
+  dplyr::summarize(n(), mean(d_donation), mean(total_don), median(total_don), sd(total_don), mean(donation), sd(donation)) %>%
+  kable() %>%
+  kable_styling()
+
+"Donated by trust"
+sx_dp %>%
+  filter(year == 2019, stage == "1", treat_no_ask == "Asked") %>%
+  tabyl(trust, d_donation) %>%
+  adorn_percentages("row") %>%
+  kable() %>%
+  kable_styling()
+
+"Donations by trust - stage 1 and total"
+sx_dp %>%
+  filter(stage == "1", treat_no_ask == "Asked") %>%
+  dplyr::group_by(trust) %>%
+  dplyr::summarize(n(), mean(d_donation), mean(total_don), median(total_don), sd(total_don), mean(donation), sd(donation)) %>%
+  kable() %>%
+  kable_styling()
+
+"Donations by trust (s2)"
+sx_dp %>%
+  filter(stage == "2") %>%
+  dplyr::group_by(trust) %>%
+  dplyr::select(donation, d_donation, total_don, trust) %>%
+  dplyr::summarise_all(funs(mean), na.rm = TRUE) %>%
+  kable() %>%
+  kable_styling()
+
+"Donations by trust by dom-don vs int-int"
+sx_dp %>%
+  filter(stage == "1", treatment == "Internat.-Internat." | treatment == "Domestic-Domestic" | d_attrited == 1) %>%
+  dplyr::group_by(treatment, trust) %>%
+  dplyr::select(donation, d_donation, total_don, trust, treatment) %>%
+  dplyr::summarise_all(funs(mean), na.rm = TRUE) %>%
+  kable() %>%
+  kable_styling()
+
+"Donated by decision mode, s1 2019)"
+sx_dp %>%
+  filter(year == 2019, stage == "1", treat_no_ask == "Asked") %>%
+  tabyl(decision_mode, d_donation)
+
+"Donation by support dev poverty aid; s1, treat_first_ask International"
+sx_dp %>%
+  filter(stage == "1", treat_first_ask == "International") %>%
+  dplyr::group_by(dev_poverty_aid) %>%
+  dplyr::select(donation, d_donation, total_don, dev_poverty_aid) %>%
+  dplyr::summarise_all(funs(mean), na.rm = TRUE) %>%
+  kable() %>%
+  kable_styling()
+
+"Donation by support domestic poverty aid; s1, treat_first_ask Domestic"
+sx_dp %>%
+  filter(stage == "1", treat_first_ask == "Domestic") %>%
+  dplyr::group_by(uk_poverty_aid) %>%
+  dplyr::select(donation, d_donation, total_don, uk_poverty_aid) %>%
+  dplyr::summarise_all(funs(mean), na.rm = TRUE) %>%
+  kable() %>%
+  kable_styling()
+```
+
+
+
+## Ex-post power analyses and other evidentiary considerations
+
+## Meta-analysis (present and prior work, own and other authors) (todo)
+
+
+
+## Building rich frames for modeling, exploring regressions (?) -- do this elsewhere
+
+
+### Misc exploratory/descriptive analyses of relation to Omnibus variables, etc - do this elsewhere
+
+*(earlier) Ad-hoc takeaways:*
+
+Schwartz classifications (hc) don't seem to matter much to donation (first glance), 
+but (hc) stated trust does (need to do the formal tests)
+
+Stated support for poverty aid does as well (hc)
+
+
+# Robustness checks etc
+
+## Response day of week, sensitivity to 'clumping'
+
+- Some of this is done in scoping_2019.Rmd
+
+
+# Analysis of Mturk+Omnibus studies (S1-6)
+
+Simple outcomes check, by study
+
+```{r outcomes_by_study, warning=FALSE}
+
+(out_by_study <- dp_sx_mt %>%
+   mutate_if(is.character, as.factor) %>%
+   mutate_if(is.logical, as.numeric) %>%
+   table1(
+     splitby = ~study,
+          "DONATE" = d_donation, "Donation" = donation, "Don. Share" = av_don, 
+          output = "html",
+          na.rm = FALSE,
+          test = FALSE,
+          type = c("simple"),
+          second = c("donation", "av_don"),
+          total = TRUE
+         ))
+
+```
+
+## 'Regular' regressions
+
+```{r regular_regs, warning=FALSE}
+
+sxmt_lin <- lm(donation ~ im05*eff05 + maxdon + as.factor(study), data = dp_sx_mt) %>%
+coeftest(., vcov = vcovHC(., type = "HC0"))
+
+sxmt_share <- lm(av_don ~ im05*eff05 + maxdon + as.factor(study), data = dp_sx_mt)  %>%
+coeftest(., vcov = vcovHC(., type = "HC0"))
+
+#fractional response 
+sxmt_frac <- glm(av_don ~ im05*eff05 + maxdon + as.factor(study), data = dp_sx_mt, family = quasibinomial('logit'))
+
+sxmt_fracm <- margins(sxmt_frac, data=dp_sx_mt,  type = "link")
+
+sxmt_lpm <- lm(d_donation ~ im05*eff05 + maxdon + as.factor(study), data = dp_sx_mt) %>% 
+coeftest(., vcov = vcovHC(., type = "HC0"))
+
+hux_ols_don_sxmt <- huxreg('Amount' = sxmt_lin, 'Don share' = sxmt_share, '... frac.-response'=  sxmt_frac, 'DONATE-lpm' = sxmt_lpm, ci_level = .95, error_format = "[{conf.low}, {conf.high}]", coefs = c("(Intercept)","Image"="im05", "Effectiveness"="eff05", "Image x Eff." = "im05:eff05","Max pot'l don" = "maxdon"), statistics = c(N = "nobs", R2 = "r.squared"), note="{stars}. 95% CI's reported. Heteroskedasticity-robust (Huber-White) standard errors used.  Treatment variables and interactions (Image, Effectiveness, Image x Eff.) are effect-coded. Hidden controls in all columns: Study dummies. Fractional-response marginal effects given in footnote.")    %>% 
+      set_caption('Regressions: pooled across studies 1-6') %>% 
+        set_font_size(final(), 1, 9)                                   %>% 
+          set_bottom_border(1, 1:2, 1)    %>%
+        set_top_border(final(), 1, 1)                                  %>%
+  theme_article %>%
+ set_bold(final(), 1, FALSE)    
+
+top_border(hux_ols_don_sxmt)[12, ] <- 1
+bottom_border(hux_ols_don_sxmt)[12, ] <- 1
+bottom_border(hux_ols_don_sxmt)[11, ] <- 1
+width(hux_ols_don_sxmt) <- 1.6
+number_format(hux_ols_don_sxmt) <- 2
+col_width(hux_ols_don_sxmt) <- c(.75,.85,.9,.9,.9)
+print_screen(hux_ols_don_sxmt)
+hux_ols_don_sxmt
+```
+
+## Lee bounds
+
+```{r lee-bounded}
+
+# stata code
+if (Sys.info()["sysname"] == "Darwin") {
+  options("RStata.StataPath" = "/Applications/Stata/StataSE.app/Contents/MacOS/stata-se")
+  stataver <- 16
+} else {
+  options("RStata.StataPath" = "/usr/local/bin/stata15/stata-se")
+  stataver <- 15
+}
+
+p_load(RStata)
+# Todo: get these estimates to code a value for "NA's"
+
+dp_sx_mt_stata <- dp_sx_mt %>%
+  mutate(study=as.factor(study),
+         don_pos_only = if_else(donation==0, na_dbl,donation),
+         don_share_pos_only = if_else(av_don==0, na_dbl, av_don),
+         ef_x_im = (im05>0)*(eff05>0)) %>%
+  select(donation, don_pos_only, don_share_pos_only, im05, eff05, ef_x_im, maxdon, av_don, d_donation, study) %>%
+    cbind(.,model.matrix( ~ study - 1, data=. )) %>% #study into dummies
+  as.tibble()
+
+#?, "parmest, fast"
+
+leebounds_dpsx_im <- stata(src = c("leebounds don_share_pos_only im05, tight(eff05 study1 study2 study3 study4 study5) cie level(95) vce(boot, reps(100))"),
+                   data.in = dp_sx_mt_stata, 
+                   stata.version = stataver,
+                   data.out = FALSE) 
+
+leebounds_dpsx_ef <- stata(src = c("leebounds don_share_pos_only eff05, tight(im05 study1 study2 study3 study4 study5) cie level(95) vce(boot, reps(100))"),                   data.in = dp_sx_mt_stata, 
+                   stata.version = stataver,
+                   data.out = FALSE) 
+
+dp_sx_mt_stata_nomis <- dp_sx_mt_stata %>%
+  filter(!is.na(eff05), !is.na(im05))
+  
+# Interaction ... sort of... introducing eff wher IM present only 
+
+leebounds_dpsx_inter <- stata(src = c("leebounds don_share_pos_only eff05, tight(study1 study2 study3 study4 study5) cie level(95) vce(boot, reps(100))"),                   data.in = filter(dp_sx_mt_stata_nomis, im05>0), 
+                   stata.version = stataver,
+                   data.out = FALSE) 
+
+#leebounds_dpsx_im <- leebounds_dpsx_im  %>% 
+ # mutate(stderr = paste0("(", round(stderr,2), ")"),
+  #       estimate = round(estimate, 2),
+   #      p = round(p, 3)) %>% 
+  #unite(est, estimate, stderr, sep = " ") %>% select(Bound = parm, "Estimate" = est, "p-value" = p)
+
+#huxtable(leebounds_dpsx) %>% add_colnames() %>% huxtable::add_footnote("Standard errors are given in parenthesis.", border =.8) %>% set_bold(1, 1:3, TRUE)
+```
+***
+
+We put session info at the end to help others replicate this:
+
+```{r sessinfo}
+sessionInfo()
+```
+
+
+# References
+
+#Notes
+
+- Arm 1: presenting emotional (a blind girl photo) and
+- Arm 2: presenting cost/impact information
+
+Before asking people to choose whether, and how much to donate to Carter Center River Blindness, or Guide Dogs for the Blind, or neither.
+
+Initial peeking at the evidence suggests that 
+- the photo had little impact on overall donations, but may have tilted people slightly towards River Blindness (possibly because the girl was Brown-skinned with a headscarf)
+- the cost treatment had no effect
+
+I need to look more closely to consider the statistical significance of the tilt and precision of the null effect, but it seems to go a bit against the conventional wisdom that "emotional appeals reduce effectiveness" and "analytic/cost information makes people less empathetic" 

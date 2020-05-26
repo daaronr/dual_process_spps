@@ -1,0 +1,92 @@
+---
+title: "Codebook: Essex Dual Process (With Omnibus 2019); aka 'Study 6'"
+author: "David Reinstein and Robin Bergh"
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    code_folding: 'hide'
+    self_contained: true
+  pdf_document:
+    toc: yes
+    toc_depth: 4
+    latex_engine: xelatex
+---
+
+
+```{r setup-1, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE,  message = TRUE, error = TRUE, echo = FALSE)
+
+ggplot2::theme_set(ggplot2::theme_bw())
+
+pander::panderOptions("table.split.table", Inf)
+
+library(knitr)
+library(tidyverse)
+library(haven)
+library(here)
+library(codebook)
+library(rlang)
+
+```
+
+```{r Import-data, message=FALSE, warning=FALSE, include=FALSE}
+
+# Note: when we share this, let's post the data online at OSF 
+# and use 'rio::import' to bring it in
+#TODO: have it only re-run the import if the data is *not* present
+
+
+purl(input = here("analysis", "ImportData.Rmd"), output = here("code", "ImportData.R"))
+source(here("code","ImportData.R"))
+
+names(sx_dp) %<>% tolower
+    
+col_clean <- function(x){ colnames(x) <- gsub("\\.\\.+", "_", colnames(x)); x } 
+sx_dp <- col_clean(sx_dp)
+
+sx_dp <- detect_missing(sx_dp,
+    only_labelled = TRUE, # only labelled values are autodetected as missing
+    negative_values_are_missing = FALSE, # negative values are NOT missing values
+    ninety_nine_problems = TRUE,   # 99/999 are missing values, if they are more than 5 MAD from the median
+    )
+
+```
+
+
+```{r meta-data, include=FALSE}
+metadata(sx_dp)$name <- "Dual process, effectiveness and empathy in charitable giving decisions"
+metadata(sx_dp)$description <- "Essex 2019 - Omnibus survey, Charitable asks for blindness charities with effectiveness and empathy treatments, ESSExLab pool: Non-British and late responders"
+metadata(sx_dp)$identifier <- "doi:TBA"
+metadata(sx_dp)$datePublished <- "TBA"
+metadata(sx_dp)$creator <- list(
+  list(
+  "@type" = "Person",
+  givenName = "David", familyName = "Reinstein",
+  email = "daaronr@gmail.com",
+  affiliation = list("@type" = "Organization",
+                     name = "University of Exeter")),
+  list(
+  "@type" = "Person",
+  givenName = "Robin", familyName = "Bergh",
+  email = "",
+  affiliation = list("@type" = "Organization",
+                     name = "Harvard University"))
+)
+metadata(sx_dp)$citation <- "Bergh, Reinstein (2019)"
+metadata(sx_dp)$url <- "TBA"
+metadata(sx_dp)$temporalCoverage <- "2019"
+metadata(sx_dp)$spatialCoverage <- "Essex, UK"
+metadata(sx_dp)$keywords <- c("Experiment", "Charitable giving","Survey","Empathy","Happiness","Dual process", "Effectiveness", "Empathy", "Identifiable victim")
+
+```
+
+
+```{r codebook-generation, message=FALSE, warning=FALSE}
+                                                                                        
+codebook(sx_dp, survey_repetition = "single", metadata_table = TRUE)
+
+```
+
+

@@ -1,0 +1,561 @@
+## ----setup2, include=TRUE, warning=FALSE------------------------------------------------------------------
+library(knitr)
+library(tidyverse)
+library(magrittr)
+library(janitor)
+library(here)
+library(lubridate)
+library(forcats)
+library(DescTools)
+library(readxl)
+library(plyr)
+library(codebook)
+library(lmtest)
+library(car)
+library(data.table)
+library(checkpoint)
+library(snakecase)
+library(rlang)
+library(labelled)
+library(skimr)
+
+library(forcats) #https://blog.exploratory.io/why-factor-is-one-of-the-most-amazing-things-in-r-eM67fe27d292
+
+#require("devtools")
+#devtools::install_github("martinctc/surveytoolbox")
+#library(surveytoolbox)
+
+here <- here::here
+
+source(here("code", "functions.R")) # functions grabbed from web and created by us for analysis/output
+source(here("code", "baseoptions.R")) # Basic options used across files and shortcut functions, e.g., 'pp()' for print
+
+source(here("code", "varlists.R"))
+#source(here("code", "codings_labelings.R"))
+
+select <- dplyr::select # to save typing/confusion later
+fill <- tidyr::fill
+as_factor <- forcats::as_factor
+rename <- dplyr::rename
+mutate <- dplyr::mutate
+
+options(warning.length = 100)
+options(nwarnings = 1) # trying to limit display of  warnings; I don't think it is working!
+options(max.print = 1000)
+
+
+## ----mturk_dp_in, message=FALSE, warning=FALSE------------------------------------------------------------
+
+bergdir <- "/Users/yosemite/OneDrive\ -\ University\ of\ Exeter/berghmturk1to5/" #out of github for now because of IRB
+
+csv_files <- fs::dir_ls(bergdir, regexp = "[sS]..csv$") #all csv files other than the dp one
+
+dp_1_5 <- csv_files %>% 
+  purrr::map_dfr(readr::read_csv, .id = "study") %>% 
+  mutate(
+    study = case_when(
+      str_detect(study, "s1.csv") ~ 1,  
+      str_detect(study, "S2.csv") ~ 2,  
+      str_detect(study, "s3.csv") ~ 3,  
+      str_detect(study, "s4.csv") ~ 4,  
+      str_detect(study, "s5.csv") ~ 5  
+    )
+  )
+
+#read in all csv files, 'map_dfr' is a shortener for map() %>% bind_rows() ... binding it into a data frame; '.id' stores source of data as "source" (see https://www.gerkelab.com/blog/2018/09/import-directory-csv-purrr-readr/)
+
+#todo : map description as attribute from file "Variables.xlsx"
+
+
+
+## ----mturk_minimal, message=FALSE, warning=FALSE----------------------------------------------------------
+
+#Key outcome(s): 
+#DonCont: amount actually donated (conditional on win in some cases?)
+
+#Key treatments: 
+  #treat_image (coded from im05)
+  #treat_eff_info: coded from eff05, eff3
+
+dp_1_5 <- dp_1_5 %>%
+mutate( 
+  donation=DonCont,
+  d_donation = as.numeric(if_else(donation > 0 & !is.na(donation), 1, 0)),
+  treat_image = as.numeric(if_else(im05>0,1,0)), #for consistency; effect coding is better but we can put that back later
+  treat_eff_info = case_when(
+    eff05== 0.5 ~ 1,
+    eff05== -0.5 ~ 0,
+    eff3== -0.5 & study != 4  ~ na_dbl,
+    eff3== 0 & study != 4 ~ 0,
+    eff3== 0.5 & study != 4 ~ 1,
+    # for study 4:  (-0.5 = early, 0 = no, +0.5 = late presentation of efficiency comparison:)
+    eff3== 0 & study == 4 ~ 0,
+    eff3== -0.5 & study == 4 ~ 1,
+    eff3== 0.5 & study == 4 ~ 1)
+  )
+
+# Other outcomes and mediators: 
+
+med_out <- c("DonInt", "ReactIm","Donfeel_1","Donfeel_4")
+
+# Relevant controls (Note: these and the personality questions  were asked AFTER the treatments)
+demog_qs <- c("Age", "Gender", "SESperc_1", "PersInc", "HouseInc", "Nat", "NatID_1", "Ethn", "EthnID_1")
+
+#Q85_86	Please indicate your agreement with the following statements.-I believe that charity initiatives in general are efficient to help people in need.
+
+#Effcheck_1	To help children in Syria, how efficient do you think that charitable giving is (at its best)?.
+
+#Put key variables first
+dp_1_5 <- dp_1_5 %>%
+  select(study, treat_image, treat_eff_info, d_donation, donation, eff3, med_out, Q85_86, Effcheck_1, demog_qs, everything())
+
+
+
+## ----om_dp_in, message=TRUE, warning=FALSE----------------------------------------------------------------
+
+# Read col names
+col_names_dp <- names(read_csv(here("data", "Omnibus+2019+-+Open-call+(Non-British+++British+non-completes)_June+13,+2019_17.57.csv"), n_max = 0))
+
+# Read data
+sx_dp_0 <- read_csv(here("data", "Omnibus+2019+-+Open-call+(Non-British+++British+non-completes)_June+13,+2019_17.57.csv"),col_names = col_names_dp, skip = 3, trim_ws = TRUE)
+
+pp("Dimensions of original download:")
+dim(sx_dp_0)
+
+pp("Filter out participants who have not made it to the donation stuff")
+
+sx_dp <- sx_dp_0 %>%
+  mutate(
+  time_introprize_click =  coalesce(`timing_intro_prize_First Click`,`time_introprize_ctrl_First Click`)
+) %>% #participants who have made it to the screen before the donation stuff
+  filter(!is.na(time_introprize_click)) #cut 78 'NAs' all of whom are recorded as Finished==0
+
+sx_dp0_atr <- sx_dp_0 %>% #Those who started and quit
+                          #super-lame to repeat above code but I can't figure out how to t-pipe an alternative
+  mutate(
+    time_introprize_click =  coalesce(`timing_intro_prize_First Click`,`time_introprize_ctrl_First Click`)
+  ) %>% #participants who have made it to the screen before the donation stuff
+  filter(is.na(time_introprize_click)) #keep 'NAs' all of whom are recorded as Finished==0
+
+#todo -- any other filters necessary?
+
+pp("Remove most timers and survey order coders for now, as well as useless variables")
+sx_dp <- sx_dp %>%
+  select( -starts_with("FL"), -matches("click"),-contains("_DO_")) %>%
+    select_if(function(.) n_distinct(.) != 1) %>% #cut unvarying variables
+  select(-matches("consent|antijoin|rand|Q19|Q40|Q35|Q36|oops"))
+
+pp("Dimensions after filter, first-pass variable selections:")
+dim(sx_dp)
+
+
+
+## ----inputdl----------------------------------------------------------------------------------------------
+
+labels_comparison <- read_excel(here("data", "Labels_comparison_P_DNS_DS_cutwaste.xlsx")) %>%
+  select(everything(), -ID, -"Labels Count", -"Where_Present", -"Labels_Pat") %>%
+  # ignore Pat's data, drop junk columns
+  rename(Unique_Labels = "Unique Labels") %>%
+  filter(!is.na(Unique_Labels)) %>% # just drops entire missing rows
+  mutate(
+    Labels_DS = case_when(
+      Labels_DS == "same" ~ Unique_Labels,
+      Labels_DS == "no - doesn't exist" ~ "",
+      TRUE ~ Labels_DS
+    ),
+    Labels_DNS = case_when(
+      Labels_DNS == "same" ~ Unique_Labels,
+      Labels_DNS == "no - doesn't exist" ~ "",
+      TRUE ~ Labels_DNS
+    ),
+    easy_label = ifelse(!is.na(Easy_Label), Easy_Label, Unique_Labels)
+  )
+
+# Question texts across surveys
+question_text_comparisons <- read_excel(here("data",
+                                             "question_comparison_shortened.xlsx"),
+                                        sheet = "Sheet Changed") %>%
+  select("Unique_Labels", "Unique Questions across all survey",
+         Q_DS, Q_DNS, fuller_questions) %>% # ignore Pat's data, drop junk columns
+  rename(Unique_Qs = "Unique Questions across all survey") %>%
+  filter(!is.na(Unique_Qs)) # just drops entire missing rows, if any
+
+
+labels_qs_concordance <- labels_comparison %>%
+  left_join(question_text_comparisons, by = "Unique_Labels") %>%
+  filter((!is.na(Labels_DNS) | !is.na(Labels_DS))) %>% # keep only if the variable is in one of our experiments
+  filter((Labels_DNS != "") | (Labels_DS != "")) # keep only if the variable is in one of our experiments
+
+
+
+
+## ----treatments-timers, message=FALSE, warning=FALSE------------------------------------------------------
+
+sx_dp <- sx_dp %>%
+  mutate(
+    d_river_1st= case_when( #dummy for 'reversed order' ... river blindness discussed first
+      !is.na(`time_charch_noef_rev_Page Submit`) ~ TRUE,
+      !is.na(`Q244_Page Submit`) ~ TRUE,
+      TRUE ~ FALSE #freedom is slavery
+      )
+    ) %>%
+  mutate(
+    time_desc_chars = coalesce(`timer_desc_chars_eff_Page Submit`,`time_descrip_rev_Page Submit`), #todo: check how this timer works when two elements share the same page!
+    time_charch = coalesce(`time_charch_noeff_Page Submit`, `time_char_choice_eff_Page Submit`, `time_charch_noef_rev_Page Submit`, `Q244_Page Submit`)) %>%
+    rowwise() %>%
+  mutate(
+  time_intro_prize = sum(`time_introprize_ctrl_Page Submit`, `timing_intro_prize_Page Submit`,`timing_image_Page Submit`, na.rm = TRUE)
+  )
+
+pp("Recover treatments, including for those who ended early but still saw this screen")
+sx_dp <- sx_dp %>%
+  mutate(
+    raw_treat_eff_info = treat_eff_info,
+    raw_treat_image = treat_image,
+    treat_eff_info = case_when(
+      !is.na(`Q244_Page Submit`) ~ "Info",
+      !is.na(`time_char_choice_eff_Page Submit`) ~ "Info",
+      TRUE ~ "No info"),
+    treat_image = ifelse(!is.na(`timing_image_Page Submit`),"Image","No image")
+    ) %>%
+  select(-matches("Submit"))
+
+pp("8 observations recovered")
+
+#Note -- I checked that this coding agreed with the embedded data, where present
+
+sx_dp <- sx_dp %>%
+  ungroup() %>%
+  mutate(
+ treatment = case_when(
+      treat_image == "Image"    & treat_eff_info == "Info" ~ "Image-Info",
+      treat_image == "Image"    & treat_eff_info == "No info" ~ "Image only",
+      treat_image == "No image" & treat_eff_info == "Info" ~ "Info only",
+      treat_image == "No image" & treat_eff_info == "No info" ~ "Control")) %>%
+    mutate(
+      treatment = as.factor(treatment)
+      )
+
+
+
+
+## ----donation-happiness-outcomes, message=FALSE, warning=FALSE--------------------------------------------
+
+sx_dp <- sx_dp %>%
+  rename(donation=don_slider_1,
+         happiness=happy_q_1) %>%
+  mutate(
+          char_choice= coalesce(charchc_noeff_6,charchc_noeff_7,charch_noef_rev_7,charch_noef_rev_12,char_choice_efftreat_6,char_choice_efftreat_7,choice_eff_reverse_6,choice_eff_reverse_12),
+          donation=ifelse(is.na(donation),0,donation),
+          char_choice = case_when(
+      grepl("Guide dogs", char_choice) ~ "Guide dogs",
+      grepl("River", char_choice) ~ "River blindness",
+      TRUE ~ "No donation"
+      )
+  )
+
+
+
+## ----clean-edit-long_categoricals-2019--------------------------------------------------------------------
+
+sx_dp <- sx_dp %>% # binaries of donations
+  mutate(
+    d_donation = as.numeric(if_else(donation > 0 & !is.na(donation), 1, 0)),
+    d_donated_all = as.numeric(if_else(donation == 50, 1, 0)),
+    d_donated_mid = as.numeric(if_else(donation > 1 & donation < 50, 1, 0))
+  ) %>%
+  mutate(
+    endow = 50,
+    av_don = donation / endow
+  ) %>%
+  mutate(
+    don_guide_dogs = as.numeric(if_else(char_choice=="Guide dogs",donation,0)),
+    d_don_guide_dogs = as.numeric(if_else(don_guide_dogs>0 & !is.na(don_guide_dogs),1,0)),
+    don_river = as.numeric(if_else(char_choice=="River blindness",donation,0)),
+    d_don_river = as.numeric(if_else(don_river>0 & !is.na(don_guide_dogs),1,0))
+  )
+
+
+
+## ----code-dates-durations, message=FALSE, warning=FALSE---------------------------------------------------
+
+sx_dp <- sx_dp %>% # coding dates
+  mutate(
+    date_sent =dmy_hm("31-5-2019 20:02 BST"),
+    #Student = 1, #commented out because altg it's ESSExLab not all are students
+    Finished = as.logical(Finished),
+    StartDate = ymd_hms(StartDate),
+    EndDate = ymd_hms(EndDate),
+    dur_survey = as.duration(EndDate - StartDate) / dminutes(1),
+    delay_response = as.duration(StartDate- date_sent) / ddays(1)
+  )
+
+
+
+## ----clean-edit-long_misc---------------------------------------------------------------------------------
+
+sx_dp <- sx_dp %>%
+  mutate(
+    EyesCorrectPct = ((eyes_s1 == "Playful") +
+      (eyes_s2 == "Upset") +
+      (eyes_s3 == "Insisting") +
+      (eyes_s4 == "Worried") +
+      (eyes_s5 == "Despondent") +
+      (eyes_s6 == "Doubtful") +
+      (eyes_s7 == "Regretful") +
+      (eyes_s8 == "Decisive") +
+      (eyes_s9 == "Skeptical") +
+      (eyes_s10 == "Graceful") +
+      (eyes_s11 == "Anticipating") +
+      (eyes_s12 == "Hostile") +
+      (eyes_s13 == "Cautious") +
+      (eyes_s14 == "Flirtatious") +
+      (eyes_s15 == "Interested") +
+      (eyes_s16 == "Confident") +
+      (eyes_s17 == "Reflective") +
+      (eyes_s18 == "Serious")) / 18
+  ) %>%
+  select(-matches("eyes_"))
+
+# binaries of stated DECISION mode
+
+sx_dp <- sx_dp %>%
+  mutate(
+    d_decis_intu = case_when(
+      grepl("rapidly", decision_mode) ~ 1,
+      grepl("partly", decision_mode) & grepl("intuition", decision_mode_follow) ~ 1,
+      TRUE ~ 0 )
+    ) %>%
+  mutate(
+    d_decis_intu_m =
+      case_when(
+        is.na(d_decis_intu) & decision_mode == "I decide very rapidly on the basis of my intuition" ~ 1,
+        is.na(d_decis_intu) & decision_mode != "I decide very rapidly on the basis of my intuition" ~ 0,
+        TRUE ~ d_decis_intu
+      )
+  )
+
+sx_dp <-  sx_dp %>%      
+  mutate(givendate = dmy("31-5-2019"),
+    age = interval(dmy(birth), givendate) / duration(num = 1, units = "years"),
+    d_mature = (age > 23),
+    age_sq = age^2)
+
+
+
+## ----add-variables----------------------------------------------------------------------------------------
+
+#@fromsubstitution
+
+sx_dp <- sx_dp %>%
+  mutate_if(grepl(paste(factor_me, collapse = "|"), names(.)), as.factor) %>%
+  mutate_if(grepl(paste(bool_me, collapse = "|"), names(.)), as.factor)  %>%
+  mutate_if(grepl(paste(int_me, collapse = "|"), names(.)), as.integer) 
+
+pp("create ordered factors")
+
+sx_dp <- sx_dp %>%
+  mutate(d_donation = as.factor(as.numeric(d_donation))) %>%
+  mutate_at(.funs = funs(as.ordered(.)), .vars = vars(matches("schwartz"))) %>%
+  mutate_at(.funs = funs(fct_relevel(., c("Not like me at all", "Not like me", "A little like me", "Somewhat like me", "Like me", "Very much like me"))), .vars = vars(matches("schwartz"))) %>%
+  mutate_at(.funs = funs(as.ordered(.)), .vars = vars(matches("poverty_aid"))) %>%
+  mutate_at(.funs = funs(fct_relevel(., c("Extremely supportive", "Very supportive", "Moderately supportive", "Somewhat supportive", "A little supportive", "Not very supportive", "Not at all supportive"))), .vars = vars(matches("poverty_aid"))) %>%
+  mutate_at(.funs = funs(fct_rev(.)), .vars = vars(matches("poverty_aid"))) %>%
+  mutate_at(.funs = funs(as.ordered(.)), .vars = vars(matches("topics_s"))) %>%
+  mutate_at(.funs = funs(ordered(., levels = lik4_levels)), .vars = vars(likertsm)) %>%
+  mutate_at(.funs = funs(ordered(., levels = risk_levels)), .vars = vars("risk")) %>%
+  mutate_at(.funs = funs(ordered(., levels = polint_levels)), .vars = vars("pol_interest")) %>%
+  mutate_at(.funs = funs(ordered(., levels = polit_levels)), .vars = vars("political")) %>%
+  mutate_at(.funs = funs(ordered(., levels = ideol_levels)), .vars = vars(matches("social_ideo_"))) %>%
+  mutate_at(.funs = funs(ordered(., levels = lik4_levels)), .vars = vars(likertsm5)) %>%  #TODO: Nake own likert scale
+  mutate_at(.funs = funs(ordered(., levels = taxshare_levels)), .vars = vars("tax_share")) %>%
+  mutate_at(.funs = funs(ordered(., levels = ukaid_levels)), .vars = vars("uk_aid_spend")) %>%
+  mutate_at(.funs = funs(ordered(., levels = importance_levels)), .vars = vars(matches("get_ahead_UK"))) %>%
+  mutate_at(.funs = funs(ordered(., levels = charity_impr_levels)), .vars = vars(matches("charity_impressions_"))) %>%
+  mutate_at(.funs = funs(as.factor(.)), .vars = vars(matches("charity_familiarity_"))) %>%
+  mutate(dow = as.factor(wday(StartDate)))
+
+sx_dp <- sx_dp %>%
+    mutate(
+      study = case_when(
+      grepl("phd|doctoral", studies, ignore.case = TRUE) ~ "PhD",
+      grepl("msc|meng", studies, ignore.case = TRUE) ~ "masters",
+      grepl("MA", studies) ~ "masters",
+      grepl("llm", studies, ignore.case = TRUE) ~ "LLM",
+      grepl("business|finan|accounti|market|manage", studies, ignore.case = TRUE) ~ "Business",
+      grepl("econom", studies, ignore.case = TRUE) ~ "Economics",
+      grepl("sociology", studies, ignore.case = TRUE) ~ "Sociology",
+      grepl("medic|clinical", studies, ignore.case = TRUE) ~ "Medicine",
+      grepl("biol|biochem|genet", studies, ignore.case = TRUE) ~ "Biological",
+      grepl("govern|polit|international", studies, ignore.case = TRUE) ~ "Government/politics",
+      grepl("occup|therap|sport", studies, ignore.case = TRUE) ~ "Occup/physio/therap",
+      grepl("psych", studies, ignore.case = TRUE) ~ "Psych",
+      grepl("philoso", studies, ignore.case = TRUE) ~ "Philosophy",
+      grepl("law|legal", studies, ignore.case = TRUE) ~ "Law/Legal",
+      grepl("comput", studies, ignore.case = TRUE) ~ "Comput",
+      grepl("math", studies, ignore.case = TRUE) ~ "Maths",
+      grepl("liberal|language|lingui|human|english|histo|film|writing|litera|drama|art|music|studies|media", studies, ignore.case = TRUE) ~ "Humanities",
+      grepl("science", studies, ignore.case = TRUE) ~ "Sci-other",
+      grepl("engineer", studies, ignore.case = TRUE) ~ "Engineering"
+    ),
+    study = as.factor(study)
+    )
+
+    #TRUE ~ as.character(study_hroot_3_course)
+
+colnames(sx_dp) <- colnames(sx_dp) %>% to_snake_case()
+sx_dp <- sx_dp[, !duplicated(colnames(sx_dp))]
+
+
+
+## ----Add-labelling----------------------------------------------------------------------------------------
+
+column_names <- names(sx_dp)
+
+labels_qs_concordance <- labels_qs_concordance[!is.na(labels_qs_concordance$Unique_Qs), ] %>%
+mutate(easy_label = to_snake_case(Easy_Label)) %>%
+ arrange(easy_label)
+
+labels_target <- labels_qs_concordance$Unique_Qs
+
+shared_columns <- intersect(column_names, labels_qs_concordance$easy_label) %>%  sort()
+
+labels_target_shared <- filter(labels_qs_concordance, easy_label %in% shared_columns)
+
+sx_dp <- sx_dp %>% dplyr::select(shared_columns,everything())
+
+var_label(sx_dp[1:length(shared_columns)]) <- labels_target_shared$Unique_Qs
+
+
+
+## ----Reconcile-column-names, message=FALSE, warning=FALSE-------------------------------------------------
+
+# For StudentsFirstAsk: join colnames to labels_comparison_p_dns_ds concordance, swap in 'fixlabel' (Easy_Label, or existing label where this is missing)
+
+pp("swap in code as necessary")
+
+
+## ----bind-omni-mturk--------------------------------------------------------------------------------------
+
+sx_dp <- sx_dp %>%
+  mutate(study = 6)
+
+dp_sx_mt <- rbindlist(list(sx_dp, dp_1_5), use.names = TRUE, fill = TRUE) %>%
+  as_tibble()
+
+pp("FIX: Some variables like treat_sim ")
+
+pp("Clean out old data sets")
+
+#remove(sx19_min, sx17m, hroot_2019, students_first_ask_2019, students_second_ask_2019, sx19nm)
+
+
+
+## ----omni-mturk-------------------------------------------------------------------------------------------
+
+dp_sx_mt <- dp_sx_mt %>% # binaries of donations
+  mutate(
+    #d_donated_all = case_when()
+    #d_donated_mid = 
+  ) %>%
+  mutate(
+    age = coalesce(age, Age),
+    d_donation = if_else(donation>0,1,0), #somehow this got corrupted!
+    maxdon = case_when(
+      study == 1 ~ 3,
+      study == 2 ~ 3,
+      study == 3 ~ 50,
+      study == 4 ~ 50,
+      study == 5 ~ 5,
+      study == 6 ~ 50, #This last one is GBP but I'm not converting the currency for now
+    ),
+    av_don = donation / maxdon) 
+
+
+
+## ----treat_ec---------------------------------------------------------------------------------------------
+
+dp_sx_mt <- dp_sx_mt %>% # binaries of donations
+  mutate(
+  treat_eff_info = as.numeric(
+    case_when(
+    treat_eff_info == "Info" ~"1",
+    treat_eff_info == "No info" ~"0",
+    TRUE ~ treat_eff_info
+  )),
+  treat_image = as.numeric(
+    case_when(
+    treat_image == "Image" ~"1",
+    treat_image == "No image" ~"0",
+    TRUE ~ treat_image
+  )),
+  eff05 = treat_eff_info - 0.5,
+  im05 = treat_image - 0.5
+  )
+
+
+
+## ----keytop-----------------------------------------------------------------------------------------------
+
+dp_sx_mt <- dp_sx_mt %>% 
+  select(study, donation, d_donation, treat_image, treat_eff_info, im05, eff05, age, everything())
+
+
+## ----save-data--------------------------------------------------------------------------------------------
+
+saveRDS(sx_dp,file=here("data","sx_dp.RData"),ascii=FALSE)
+write_excel_csv(sx_dp,here("data","sx_dp.csv"))
+
+#Not here because of IRB
+saveRDS(dp_sx_mt,file="/Users/yosemite/OneDrive\ -\ University\ of\ Exeter/berghmturk1to5/sx_dp.RData", ascii=FALSE)
+
+write_excel_csv(dp_sx_mt, "/Users/yosemite/OneDrive\ -\ University\ of\ Exeter/berghmturk1to5/sx_dp.csv")
+
+
+## ----dv-input-cross_x, echo=FALSE, results='hide'---------------------------------------------------------
+
+#input donation crosstabs (summary data we can analyse)
+
+dv_cross <- read_excel("other_experimental_data/DV_work/Stats-for-DV-Formula_TYVid_dr_editing.xlsx",range="moved_from...!R11:V41") %>%
+  mutate(
+    range = ordered(range, levels = c("<$50", "$50-$99", "$100-$499","$500-$999", "$1000+")),
+    mode = ordered(mode, levels = c("email-link", "not-email","any" ))
+  )
+
+
+
+## ----dv-input-ranks, echo=FALSE, results='hide'-----------------------------------------------------------
+
+#input rank data and add zeroes
+
+dv_ranks <- read_excel("other_experimental_data/DV_work/Stats-for-DV-Formula_TYVid_dr_editing.xlsx",sheet="ty_video_ranks")
+
+dv_ranks_pos <- dv_ranks %>%
+  mutate(
+    treatment=as.factor(Treatment),
+    rev_rank = rank(-Rank)
+  ) %>%
+  rename(rank=Rank) %>%
+  select(-Treatment)
+
+#Add 91298-27 zeroes for control, add 91296-71 zeroes for treatment
+
+zcontrol <- as_tibble(dv_ranks_pos[1,]) %>%
+  mutate(
+    rank=max(dv_ranks_pos$rank)+1,
+    rev_rank=min(dv_ranks_pos$rev_rank)-1,
+    treatment=as.factor("Control")
+  ) %>%
+  slice(rep(1:n(), each = 91298-27))
+
+ztreat <- as_tibble(dv_ranks_pos[1,]) %>%
+  mutate(
+    rank=max(dv_ranks_pos$rank)+1,
+    rev_rank=min(dv_ranks_pos$rev_rank)-1,
+    treatment=as.factor("Test")
+  ) %>%
+  slice(rep(1:n(), each = 91296-71))
+
+dv_ranks_all_em <- as_tibble(bind_rows(dv_ranks_pos,zcontrol,ztreat))
+
+
