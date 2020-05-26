@@ -1,0 +1,189 @@
+---
+title: "payment_processing, 2019 omnibus (non-Brit etc)"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# invalidate cache when the tufte version changes
+options(htmltools.dir.version = FALSE)
+
+library(pacman)
+p_load(knitr,dplyr,tidyverse,labelled,citr,reporttools,magrittr,glue,huxtable,experiment,dataMaid,RStata,estimatr,xtable,kableExtra,ggpubr)  #DR: I believe this loads all packages listed, installing missing ones from CRAN
+```
+
+
+# OM-dp: export sheet of ID's and commited donations; ESSExLab will choose the 20 winners of £50 prizes, subtracting and making donations
+```{r}
+
+"OM-dp payment data"
+
+sx_dp %>%
+  mutate(payment_if =50-donation) %>%
+  arrange(response_id,payment_if,don_river,don_guide_dogs) %>%
+ select(response_id,payment_if,don_river,don_guide_dogs)  %>%
+  write.csv(.,file=here("analysis","OM-dp_payments.csv")) 
+
+```
+
+# EF payments, sent to Anca
+
+```{r}
+
+"EF1 payment data"
+
+ sx_dp %>%
+  filter(treat_efb=="EF1",Finished.2=="True") %>%
+  mutate(
+        donation.2 =coalesce(secondask_dom, secondask_int),
+        payment=10-donation.2) %>% 
+  arrange(payment,ID) %>%
+ select(ID,payment,donation.2)  %T>%
+  write.csv(.,file=here("analysis","EF1_payments.csv")) %>%
+  tabyl(payment,donation.2)
+
+#for manual checks 
+StudentsSecondAsk_2019 %>% 
+  mutate(
+        donation.2 =coalesce(secondask_dom, secondask_int),
+        payment=10-donation.2) %>% 
+   filter(treat_efb=="EF1",Finished.2=="True",donation.2>0) %>% 
+  select(ID,donation.2,secondask_dom, secondask_int)
+
+StudentsSecondAsk_2019 %>% 
+  mutate(
+        donation.2 =coalesce(secondask_dom, secondask_int),
+        payment=10-donation.2) %>% 
+   filter(treat_efb=="EF1",Finished.2=="True",donation.2==0) %>% 
+  select(ID,donation.2, secondask_dom, secondask_int)
+
+"EF2 payment data"
+
+"Note: 'finished' is not sufficient; this seems to be autocoded after (?) 1 week, they must have a nonmissing value for secondask_dom or secondask_int. If they have an answer for 'guessavgsalary' they got to this page or to the preceding one."
+
+StudentsSecondAsk_2019 %>%
+  filter(treat_efb=="EF2",Finished.2=="True") %>%
+  filter(!is.na(secondask_dom)|!is.na(secondask_int)) %>%
+  mutate(
+        donation.2 =coalesce(secondask_dom, secondask_int),
+        payment=10-donation.2) %>% 
+  arrange(ID,payment) %>%
+ select(ID,payment,donation.2)  %T>%
+  write.csv(.,file=here("analysis","EF2_payments.csv")) %>%
+  tabyl(payment,donation.2)
+
+#for manual checks 
+StudentsSecondAsk_2019 %>% 
+  mutate(
+        donation.2 =coalesce(secondask_dom, secondask_int),
+        payment=10-donation.2) %>% 
+   filter(treat_efb=="EF2",Finished.2=="True",donation.2>0) %>% 
+  select(ID,donation.2,secondask_dom, secondask_int)
+
+StudentsSecondAsk_2019 %>% 
+  mutate(
+        donation.2 =coalesce(secondask_dom, secondask_int),
+        payment=10-donation.2) %>% 
+   filter(treat_efb=="EF2",Finished.2=="True",donation.2==0) %>% 
+  select(ID,donation.2,secondask_dom, secondask_int)
+
+```
+
+# Computing payments for EF1: 
+
+```{r ef-payments}
+
+david_payments_ef1a <- read_csv("~/Documents/non-cloud-info/david_payments_ef1.csv")
+#emails --> can't store on the cloud... could keep in in git folder though if I'm careful with the that 'no synch' file thing
+
+"Check for duplicate emails"
+david_payments_ef1a <- david_payments_ef1a %>% 
+  add_count(email)  %>%
+  arrange(email)
+
+david_payments_ef1 <- david_payments_ef1a %>% 
+    distinct(email, .keep_all=TRUE)
+
+"export payments list for non-duplicates (remove duplicates; Anca says these were downloaded twice)"
+
+david_payments_ef1 <- david_payments_ef1 %>%
+select(email,payment,donation.2,ID) %>%
+      left_join(select(StudentsSecondAsk_2019,c("ID","treat_second_ask")), by = "ID")  %>% 
+      arrange(-payment) 
+
+david_payments_ef1 %>%
+write.csv(.,file("~/Documents/non-cloud-info/david_payments_ef1.csv"))
+
+
+"Charity amounts for EF1, including matches"
+
+david_payments_ef1 %>% 
+  dplyr::group_by(as.factor(treat_second_ask)) %>%
+  dplyr::summarise(sum = sum(donation.2*1.25,na.rm=TRUE))
+
+#Accounting: total payments to make
+david_payments_ef1 %>% 
+  dplyr::summarise(donsum = sum(donation.2*1.25,na.rm=TRUE),paysum=sum(payment))
+
+
+#merge to ID, treatment2 data
+  #sum and add 25%
+
+```
+
+# Computing payments for EF2: 
+
+```{r ef-payments}
+
+
+david_payments_ef2a <- read_csv("~/Documents/non-cloud-info/EF2_payments.csv")
+#emails --> can't store on the cloud... could keep in in git folder though if I'm careful with the that 'no synch' file thing
+
+"Check for duplicate emails"
+david_payments_ef2a <- david_payments_ef2a %>% 
+  rename(email=`Email address`) %>%
+  add_count(email)  %>%
+  arrange(email)
+
+david_payments_ef2 <- david_payments_ef2a %>% 
+    distinct(email, .keep_all=TRUE)
+
+"export payments list for non-duplicates (remove duplicates; Anca says these were downloaded twice)"
+
+david_payments_ef2 <- david_payments_ef2 %>%
+select(email,payment,donation.2,ID) %>%
+      left_join(select(StudentsSecondAsk_2019,c("ID","treat_second_ask")), by = "ID")  %>% 
+      arrange(-payment) 
+
+david_payments_ef2 %>%
+write.csv(.,file("~/Documents/non-cloud-info/david_payments_ef2.csv"))
+
+"DR: manually checked a sample against Qualtrics page"
+
+"Charity amounts for EF2, including matches"
+
+david_payments_ef2 %>% 
+  dplyr::group_by(as.factor(treat_second_ask)) %>%
+  dplyr::summarise(sum = sum(donation.2*1.25,na.rm=TRUE))
+
+#Accounting: total payments to make
+david_payments_ef2 %>% 
+  dplyr::summarise(donsum = sum(donation.2*1.25,na.rm=TRUE),paysum=sum(payment))
+
+
+#merge to ID, treatment2 data
+  #sum and add 25%
+
+```
+
+## Total payments to charities (for OM-dp)
+
+```{r total-charity-payments}
+
+StudentsSecondAsk_2019 %>% 
+  mutate( donation.2 =coalesce(secondask_dom, secondask_int) ) %>% 
+dplyr::group_by(as.factor(treat_second_ask)) %>%
+  dplyr::summarise(sum = sum(donation.2*1.25,na.rm=TRUE))
+ 
+```

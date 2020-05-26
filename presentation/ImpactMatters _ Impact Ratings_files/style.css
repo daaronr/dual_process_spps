@@ -1,0 +1,371 @@
+
+body {
+	font-family: "Roboto", sans-serif;
+}
+
+/* Universal */
+
+a {
+	color: #609ee7;
+}
+
+a:hover {
+	text-decoration: none;
+}
+
+.tooltip, .tooltip-inner{
+	text-align: left !important;
+}
+
+/* Base */
+
+.navbar-brand img {
+	height: 20px;
+}
+
+.navbar-light {
+	-moz-box-shadow:    1px 2px 1px 2px #ccc;
+	-webkit-box-shadow: 1px 2px 1px 2px #ccc;
+	box-shadow:         0px 1px 2px 0px #ddd;
+}
+
+.top-nav {
+	-moz-box-shadow:    1px 2px 1px 2px #ccc;
+	-webkit-box-shadow: 1px 2px 1px 2px #ccc;
+	box-shadow:         0px 1px 2px 0px #ddd;
+	box-shadow: 0px 1px 2px 0px #ddd;
+}
+
+.navbar-dark .navbar-nav .nav-link {
+	color: rgba(255,255,255,.65);
+}
+
+.navbar-dark .navbar-nav .nav-link:hover {
+	color: rgba(255,255,255,.45);
+}
+
+.navbar-dark .navbar-nav .nav-link.main-link {
+	color: rgba(255,255,255,1);
+	font-weight: 500;
+}
+
+.navbar-dark .navbar-nav .nav-link.main-link:hover {
+	color: rgba(255,255,255,.8);
+}
+
+.nav-item.separator {
+	width: 1px;
+	background-color: #1e6bc6;
+	margin-right: 9px;
+	margin-left: 9px;
+	margin-top: 3px;
+	margin-bottom: 3px;
+}
+
+/* Change colors */
+
+.text-success {
+	color: #F8C51C !important;
+}
+
+.text-primary {
+	color: #609ee7 !important;
+}
+
+
+.border-success {
+	border-color: #F8C51C !important;
+}
+
+.border-primary {
+	color: #609ee7 !important;
+}
+
+.bg-success {
+	background-color: #F8C51C !important;
+}
+
+.alert-light {
+	background-color: #f8f9fa;
+	border-color: rgba(0,0,0,.125)
+}
+
+.bg-primary {
+	background-color: #609ee7 !important;
+}
+
+.btn-primary {
+	background-color: #609ee7;
+	border-color: #609ee7;
+}
+
+.btn-outline-primary {
+	color: #609ee7;
+	border-color: #609ee7;
+}
+
+.btn-outline-primary:hover {
+	background-color: #609ee7;
+	border-color: #609ee7;
+	color: white;
+}
+
+.btn-success {
+	background-color: #F8C51C !important;
+	border-color: #F8C51C !important;
+}
+
+.btn-light {
+	background-color: #eee;
+	color: rgba(0,0,0,.8) !important;
+	font-weight: 500;
+}
+
+.btn-link:hover {
+	text-decoration: none;
+}
+
+.badge-success {
+	background-color: #F8C51C !important;
+	/*border: 1px solid #F8C51C !important;*/
+	color: #ffffff;
+}
+
+.badge-primary {
+	background-color: #609ee7;
+}
+
+.badge-primary {
+	background-color: #609ee7;
+}
+
+.badge-light {
+	background-color: #f8f9fa !important;
+	border: 1px solid rgba(0,0,0,.125) !important;
+}
+
+.badge-info {
+	background-color: #48d2a0;
+}
+
+.text-info {
+	color: #48d2a0 !important;
+}
+
+.bg-info {
+	background-color: #48d2a0 !important;
+}
+
+.bg-outline-info {
+	border-color: #48d2a0 !important;
+}
+
+.btn-info {
+	background-color: #48d2a0;
+	border-color: #48d2a0;
+	color: #ffffff !important;
+}
+
+.btn-info:hover {
+	background-color: #29a97b;
+	border: 1px solid #25996f;
+}
+
+.btn-info:not(:disabled):not(.disabled).active, .btn-info:not(:disabled):not(.disabled):active, .show>.btn-info.dropdown-toggle {
+	background-color: #269e73;
+	border: 1px solid #218762;
+}
+
+/* Search styles */
+
+.search-stars img {
+	height: 21px;
+	position: relative;
+	left: -1px;
+}
+.search-donate-amount {
+	width: 100px !important;
+}
+.search-impact-badge {
+	border-radius: 2px;
+	position: relative;
+	top: -2px;
+}
+.nonprofit-feedback-badge {
+	position: relative;
+	top: -2px;
+	border-radius: 4px;
+}
+.search-nonprofit-input {
+	width: 300px !important;
+}
+
+
+.review-impact-badge {
+	border-radius: 2px;
+	position: relative;
+	top: -2px;
+	font-size: 16px;
+	text-align: left;
+}
+
+/* Nonprofit styles */
+
+.nonprofit-top-stars img {
+	height: 20px;
+}
+
+.nonprofit-box-stars img {
+	height: 34px;
+}
+
+/* Footer */
+
+.footer {
+	position: relative;
+}
+
+/* Table style */
+
+.table td {
+	border-color: #dedede;
+}
+
+/* Hero */
+
+.hero-image {
+  /* Use "linear-gradient" to add a darken background effect to the image (photographer.jpg). This will make the text easier to read */
+
+  /* Set a specific height */
+  height: 600px;
+
+  /* Position and center the image to scale nicely on all screens */
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  position: relative;
+}
+
+.hero-image-toplists {
+  /* Use "linear-gradient" to add a darken background effect to the image (photographer.jpg). This will make the text easier to read */
+
+  /* Set a specific height */
+  height: 400px;
+
+  /* Position and center the image to scale nicely on all screens */
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  position: relative;
+}
+
+/* Place text in the middle of the image */
+.hero-text {
+  text-align: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+}
+
+/* Mission */
+
+.mission-hero-image {
+
+  /* Set a specific height */
+  height: 500px;
+
+  /* Position and center the image to scale nicely on all screens */
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  position: relative;
+}
+
+/* Place text in the middle of the image */
+.mission-hero-text {
+  text-align: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+}
+
+.product-mockup {
+	border: 1px solid rgba(0,0,0,.125);
+	padding: 14px;
+	background-color: #fff;
+	-webkit-box-shadow: 4px 4px 10px -3px rgba(204,204,204,1);
+-moz-box-shadow: 4px 4px 10px -3px rgba(204,204,204,1);
+box-shadow: 4px 4px 10px -3px rgba(204,204,204,1);
+
+	border-radius: 6px;
+}
+
+/* FAQ */
+
+.accordion-toggle {
+	cursor: pointer;
+}
+
+.accordion-toggle {
+	border-top: 3px solid #48d2a0 !important;
+	padding-top: 22px !important;
+}
+
+.accordion-toggle.collapsed {
+	border-top: 1px solid #dee2e6!important;
+	padding-top: 24px !important;
+}
+
+.accordion-toggle .icon-collapsed {
+  display: none;
+}
+.accordion-toggle.collapsed .icon-collapsed {
+  display: inline-block;
+}
+.accordion-toggle.collapsed .icon-open {
+  display: none;
+}
+
+/* Rating */
+.rating-calculator-statement {
+	min-height: 38px
+}
+
+/* */
+
+.data-tooltip {
+	color: #6c757d!important;
+	font-size: 90%;
+	cursor: pointer;
+}
+
+/* Calculations */
+
+.calc-term {
+	border-radius: 4px;
+	padding: 6px;
+	white-space: nowrap;
+}
+
+.calc-term-label-intable {
+	border-bottom: 2px solid #f9e6a4;
+	font-weight: bold;
+}
+
+.calc-term-number {
+	background-color: #444;
+	width: 18px;
+	height: 18px;
+	font-size: 14px;
+	display: inline-block;
+	text-align: center;
+	border-radius: 99px;
+	color: white;
+	line-height: 18px;
+	margin-left: 3px;
+	margin-right: 3px;
+}

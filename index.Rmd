@@ -1,0 +1,49 @@
+---
+title: "Impact of impact treatments on giving: field experiments and synthesis"
+author: "Dr. David Reinstein and Donors' Voice research team, some work with Robin Bergh"
+abstract: "This 'book' organizes the project and helps others understand it and learn from it"
+#cover-image: "images/cardcatalogue.JPG"
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+output:
+  bookdown::gitbook:
+    includes:
+      in_header: header.html
+    css: tufte_plus.css 
+    config:
+      toc:
+        before: |
+          <li><a href="./"></a></li>
+        after: |
+          <li><a href="https://bookdown.org" target="_blank">Published with bookdown</a></li>
+        collapse: section
+        scroll_highlight: yes
+      fontsettings:
+        theme: white
+        size: 2
+      sharing:
+        facebook: yes
+        twitter: yes
+        google: no
+        linkedin: yes
+        weibo: yes
+        instapaper: no
+        vk: no
+        all: ['facebook', 'twitter', 'linkedin', 'weibo', 'instapaper']
+    highlight: tango
+    #includes:
+     # in_header: [header_include.html]
+    download: [pdf, epub, mobi]
+    sharing:
+      github: yes
+      facebook: no
+always_allow_html: yes
+bibliography: [giving_keywords.bib]
+biblio-style: apalike
+link-citations: yes
+github-repo: daaronr/dualprocess
+description: "Organizing research on impact of impact information"
+#url: 'https\://daaronr.github.io//'
+tags: [Economics, Experiments, Charitable giving, field experiments, dual-process, impact, effective altruism]
+---
+

@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <meta name="author" content="Dr. David Reinstein  (University of Exeter, innovationsinfundraising.org), Dr. Robin Bergh (Harvard), Donor’s Voice advisory board" />
+  <meta name="dcterms.date" content="2019-01-10" />
+  <title>How do potential donors respond to ‘impact per dollar’ information?</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+  <link rel="stylesheet" href="DV_impact_present_files/reveal.js-3.3.0.1/css/reveal.css"/>
+
+
+
+<link rel="stylesheet" href="DV_impact_present_files/reveal.js-3.3.0.1/css/theme/white.css" id="theme">
+
+
+  <!-- some tweaks to reveal css -->
+  <style type="text/css">
+    .reveal h1 { font-size: 2.0em; }
+    .reveal h2 { font-size: 1.5em;  }
+    .reveal h3 { font-size: 1.25em;	}
+    .reveal h4 { font-size: 1em;	}
+
+    .reveal .slides>section,
+    .reveal .slides>section>section {
+      padding: 0px 0px;
+    }
+
+
+
+    .reveal table {
+      border-width: 1px;
+      border-spacing: 2px;
+      border-style: dotted;
+      border-color: gray;
+      border-collapse: collapse;
+      font-size: 0.7em;
+    }
+
+    .reveal table th {
+      border-width: 1px;
+      padding-left: 10px;
+      padding-right: 25px;
+      font-weight: bold;
+      border-style: dotted;
+      border-color: gray;
+    }
+
+    .reveal table td {
+      border-width: 1px;
+      padding-left: 10px;
+      padding-right: 25px;
+      border-style: dotted;
+      border-color: gray;
+    }
+
+
+  </style>
+
+    <style type="text/css">code{white-space: pre;}</style>
+
+    <link rel="stylesheet" href="reveal.css"/>
+
+<!-- Printing and PDF exports -->
+<script id="paper-css" type="application/dynamic-css">
+
+/* Default Print Stylesheet Template
+   by Rob Glazebrook of CSSnewbie.com
+   Last Updated: June 4, 2008
+
+   Feel free (nay, compelled) to edit, append, and
+   manipulate this file as you see fit. */
+
+
+@media print {
+
+	/* SECTION 1: Set default width, margin, float, and
+	   background. This prevents elements from extending
+	   beyond the edge of the printed page, and prevents
+	   unnecessary background images from printing */
+	html {
+		background: #fff;
+		width: auto;
+		height: auto;
+		overflow: visible;
+	}
+	body {
+		background: #fff;
+		font-size: 20pt;
+		width: auto;
+		height: auto;
+		border: 0;
+		margin: 0 5%;
+		padding: 0;
+		overflow: visible;
+		float: none !important;
+	}
+
+	/* SECTION 2: Remove any elements not needed in print.
+	   This would include navigation, ads, sidebars, etc. */
+	.nestedarrow,
+	.controls,
+	.fork-reveal,
+	.share-reveal,
+	.state-background,
+	.reveal .progress,
+	.reveal .backgrounds {
+		display: none !important;
+	}
+
+	/* SECTION 3: Set body font face, size, and color.
+	   Consider using a serif font for readability. */
+	body, p, td, li, div {
+		font-size: 20pt!important;
+		font-family: Georgia, "Times New Roman", Times, serif !important;
+		color: #000;
+	}
+
+	/* SECTION 4: Set heading font face, sizes, and color.
+	   Differentiate your headings from your body text.
+	   Perhaps use a large sans-serif for distinction. */
+	h1,h2,h3,h4,h5,h6 {
+		color: #000!important;
+		height: auto;
+		line-height: normal;
+		font-family: Georgia, "Times New Roman", Times, serif !important;
+		text-shadow: 0 0 0 #000 !important;
+		text-align: left;
+		letter-spacing: normal;
+	}
+	/* Need to reduce the size of the fonts for printing */
+	h1 { font-size: 28pt !important;  }
+	h2 { font-size: 24pt !important; }
+	h3 { font-size: 22pt !important; }
+	h4 { font-size: 22pt !important; font-variant: small-caps; }
+	h5 { font-size: 21pt !important; }
+	h6 { font-size: 20pt !important; font-style: italic; }
+
+	/* SECTION 5: Make hyperlinks more usable.
+	   Ensure links are underlined, and consider appending
+	   the URL to the end of the link for usability. */
+	a:link,
+	a:visited {
+		color: #000 !important;
+		font-weight: bold;
+		text-decoration: underline;
+	}
+	/*
+	.reveal a:link:after,
+	.reveal a:visited:after {
+		content: " (" attr(href) ") ";
+		color: #222 !important;
+		font-size: 90%;
+	}
+	*/
+
+
+	/* SECTION 6: more reveal.js specific additions by @skypanther */
+	ul, ol, div, p {
+		visibility: visible;
+		position: static;
+		width: auto;
+		height: auto;
+		display: block;
+		overflow: visible;
+		margin: 0;
+		text-align: left !important;
+	}
+	.reveal pre,
+	.reveal table {
+		margin-left: 0;
+		margin-right: 0;
+	}
+	.reveal pre code {
+		padding: 20px;
+		border: 1px solid #ddd;
+	}
+	.reveal blockquote {
+		margin: 20px 0;
+	}
+	.reveal .slides {
+		position: static !important;
+		width: auto !important;
+		height: auto !important;
+
+		left: 0 !important;
+		top: 0 !important;
+		margin-left: 0 !important;
+		margin-top: 0 !important;
+		padding: 0 !important;
+		zoom: 1 !important;
+
+		overflow: visible !important;
+		display: block !important;
+
+		text-align: left !important;
+		-webkit-perspective: none;
+		   -moz-perspective: none;
+		    -ms-perspective: none;
+		        perspective: none;
+
+		-webkit-perspective-origin: 50% 50%;
+		   -moz-perspective-origin: 50% 50%;
+		    -ms-perspective-origin: 50% 50%;
+		        perspective-origin: 50% 50%;
+	}
+	.reveal .slides section {
+		visibility: visible !important;
+		position: static !important;
+		width: auto !important;
+		height: auto !important;
+		display: block !important;
+		overflow: visible !important;
+
+		left: 0 !important;
+		top: 0 !important;
+		margin-left: 0 !important;
+		margin-top: 0 !important;
+		padding: 60px 20px !important;
+		z-index: auto !important;
+
+		opacity: 1 !important;
+
+		page-break-after: always !important;
+
+		-webkit-transform-style: flat !important;
+		   -moz-transform-style: flat !important;
+		    -ms-transform-style: flat !important;
+		        transform-style: flat !important;
+
+		-webkit-transform: none !important;
+		   -moz-transform: none !important;
+		    -ms-transform: none !important;
+		        transform: none !important;
+
+		-webkit-transition: none !important;
+		   -moz-transition: none !important;
+		    -ms-transition: none !important;
+		        transition: none !important;
+	}
+	.reveal .slides section.stack {
+		padding: 0 !important;
+	}
+	.reveal section:last-of-type {
+		page-break-after: avoid !important;
+	}
+	.reveal section .fragment {
+		opacity: 1 !important;
+		visibility: visible !important;
+
+		-webkit-transform: none !important;
+		   -moz-transform: none !important;
+		    -ms-transform: none !important;
+		        transform: none !important;
+	}
+	.reveal section img {
+		display: block;
+		margin: 15px 0px;
+		background: rgba(255,255,255,1);
+		border: 1px solid #666;
+		box-shadow: none;
+	}
+
+	.reveal section small {
+		font-size: 0.8em;
+	}
+
+}  
+</script>
+
+
+<script id="pdf-css" type="application/dynamic-css">
+    
+/**
+ * This stylesheet is used to print reveal.js
+ * presentations to PDF.
+ *
+ * https://github.com/hakimel/reveal.js#pdf-export
+ */
+
+* {
+	-webkit-print-color-adjust: exact;
+}
+
+body {
+	margin: 0 auto !important;
+	border: 0;
+	padding: 0;
+	float: none !important;
+	overflow: visible;
+}
+
+html {
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+}
+
+/* Remove any elements not needed in print. */
+.nestedarrow,
+.reveal .controls,
+.reveal .progress,
+.reveal .playback,
+.reveal.overview,
+.fork-reveal,
+.share-reveal,
+.state-background {
+	display: none !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	text-shadow: 0 0 0 #000 !important;
+}
+
+.reveal pre code {
+	overflow: hidden !important;
+	font-family: Courier, 'Courier New', monospace !important;
+}
+
+ul, ol, div, p {
+	visibility: visible;
+	position: static;
+	width: auto;
+	height: auto;
+	display: block;
+	overflow: visible;
+	margin: auto;
+}
+.reveal {
+	width: auto !important;
+	height: auto !important;
+	overflow: hidden !important;
+}
+.reveal .slides {
+	position: static;
+	width: 100%;
+	height: auto;
+
+	left: auto;
+	top: auto;
+	margin: 0 !important;
+	padding: 0 !important;
+
+	overflow: visible;
+	display: block;
+
+	-webkit-perspective: none;
+	   -moz-perspective: none;
+	    -ms-perspective: none;
+	        perspective: none;
+
+	-webkit-perspective-origin: 50% 50%; /* there isn't a none/auto value but 50-50 is the default */
+	   -moz-perspective-origin: 50% 50%;
+	    -ms-perspective-origin: 50% 50%;
+	        perspective-origin: 50% 50%;
+}
+
+.reveal .slides section {
+	page-break-after: always !important;
+
+	visibility: visible !important;
+	position: relative !important;
+	display: block !important;
+	position: relative !important;
+
+	margin: 0 !important;
+	padding: 0 !important;
+	box-sizing: border-box !important;
+	min-height: 1px;
+
+	opacity: 1 !important;
+
+	-webkit-transform-style: flat !important;
+	   -moz-transform-style: flat !important;
+	    -ms-transform-style: flat !important;
+	        transform-style: flat !important;
+
+	-webkit-transform: none !important;
+	   -moz-transform: none !important;
+	    -ms-transform: none !important;
+	        transform: none !important;
+}
+
+.reveal section.stack {
+	margin: 0 !important;
+	padding: 0 !important;
+	page-break-after: avoid !important;
+	height: auto !important;
+	min-height: auto !important;
+}
+
+.reveal img {
+	box-shadow: none;
+}
+
+.reveal .roll {
+	overflow: visible;
+	line-height: 1em;
+}
+
+/* Slide backgrounds are placed inside of their slide when exporting to PDF */
+.reveal section .slide-background {
+	display: block !important;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	z-index: -1;
+}
+
+/* All elements should be above the slide-background */
+.reveal section>* {
+	position: relative;
+	z-index: 1;
+}
+
+/* Display slide speaker notes when 'showNotes' is enabled */
+.reveal .speaker-notes-pdf {
+	display: block;
+	width: 100%;
+	max-height: none;
+	left: auto;
+	top: auto;
+	z-index: 100;
+}
+
+/* Display slide numbers when 'slideNumber' is enabled */
+.reveal .slide-number-pdf {
+	display: block;
+	position: absolute;
+	font-size: 14px;
+}
+
+</script>
+
+
+<script>
+var style = document.createElement( 'style' );
+style.type = 'text/css';
+var style_script_id = window.location.search.match( /print-pdf/gi ) ? 'pdf-css' : 'paper-css';
+var style_script = document.getElementById(style_script_id).text;
+style.innerHTML = style_script;
+document.getElementsByTagName('head')[0].appendChild(style);
+</script>
+
+    <link href="DV_impact_present_files/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+    <link href="DV_impact_present_files/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+    <script src="DV_impact_present_files/kePrint-0.0.1/kePrint.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+<section>
+    <h1 class="title">How do potential donors respond to ‘impact per dollar’ information?</h1>
+    <h2 class="author">Dr. David Reinstein <small> (University of Exeter, innovationsinfundraising.org), Dr. Robin Bergh (Harvard), Donor’s Voice advisory board </small></h2>
+    <h3 class="date">01/10/2019</h3>
+</section>
+
+<section class="slide level2">
+
+<style>
+
+
+.reveal section p {
+    font-size: .90em !important;
+}
+
+.reveal section pre code {
+    font-size: 0.5em !important;
+}
+
+
+.reveal img[src*='#center'] {
+    display: block;
+    margin: auto;
+    text-align: center;
+}
+
+div.but_con {
+  margin: auto;
+  width: 97%;
+  height: 90%;
+  padding-bottom: 0px;
+}
+
+div.showopt {
+  font-size: 5%;
+  background-color: #004c93;
+  color: #FFFFFF;
+  width: 100px;
+  height: 20px;
+  text-align: center;
+  vertical-align: middle !important;
+  float: right;
+  font-family: sans-serif;
+  border-radius: 3px;
+  margin-bottom: 0px;
+}
+
+.showopt:hover {
+    background-color: #dfe4f2;
+    color: #004c93;
+}
+.reveal h1 { font-size: 1.4em;  text-transform: none;}
+.reveal h2 { font-size: 1.2em;  text-transform: none;}
+.reveal h3{ font-size: 1.1em;  text-transform: none;}
+</style>
+<style type="text/css">
+  .reveal p {
+    text-align: left;
+    font-size: .7em !important;
+  }
+
+.reveal ul {
+    display: block;
+    font-size: .9em !important;
+    text-align: left;
+    margin-left: 3em;
+    padding: 0.2em
+
+  }
+
+  .reveal ol {
+    display: block;
+    font-size: .9m !important;
+    text-align: left;
+    margin-left: 3em;
+    padding: 0.2em
+  }
+  
+  .reveal ul ul {
+    display: block;
+    font-size: .75em !important;
+    text-align: left;
+    margin-left: 4em;
+    padding: 0.15em
+  }
+
+  .reveal ol ol {
+    display: block;
+    font-size: .75em !important;
+    text-align: left;
+    margin-left: 4em;
+    padding: 0.15em
+  }
+  .reveal ol ul {
+    display: block;
+    font-size: .6em !important;
+    text-align: left;
+    margin-left: 4em;
+  }
+
+.reveal section p {
+    font-size: .90em !important;
+}
+
+.reveal section pre code {
+    font-size: 0.5em !important;
+}
+
+.reveal blockquote {
+    display: block;
+    position: relative;
+    width: 97%;
+    margin: $blockMargin auto;
+    padding: 13px;
+  font-size: .70em !important;
+  font-style: normal;
+    background: rgba(128,0,0,0.25);
+}
+    .reveal blockquote p:first-child,
+    .reveal blockquote p:last-child {
+        display: inline-block;
+          font-size: .70 !important;
+          font-style: normal;
+    }
+
+</style>
+</section>
+<section id="how-do-potential-donors-respond-to-impact-per-dollar-information" class="title-slide slide level1"><h1>How do potential donors respond to ‘impact per dollar’ information?</h1><p><small> <font color='grey'>Empathic and Numerate Giving: Donor responses to charity effectiveness and impact</font> </small></p>
+<p><img src="me.png" width="22%" style="display: block; margin: auto;" /></p>
+<center>
+Dr. David Reinstein, University of Exeter, <a href="innovationsinfundraising.org">innovationsinfundraising.org</a>
+</center>
+<small>
+<center>
+with Dr. Robin Bergh (Harvard), Donor’s Voice advisory board
+<center>
+<p></small></p></section>
+<section><section id="does-impact-matter-to-donors" class="title-slide slide level1"><h1>Does “Impact Matter” to donors?</h1><p><img src="impact_matters.png" width="80%" style="display: block; margin: auto;" /></p>
+<center>
+<a href="https://www.impactmatters.org/">Impact Matters .org</a>
+</center>
+<aside class="notes">
+<p>There are a variety of organisations, fueled by the EA <em>movement</em> and other supportes, pushing charities to help them calculate a particular scientifically/academically-supported type of “Impact” measure.</p>
+<p>I think this is and will increasingly become an important force.</p>
+</aside></section><section id="section" class="slide level2" data-background-iframe="GiveWell _ Charity Reviews and Research.html">
+<h2></h2>
+<center>
+<a href="https://www.givewell.org">https://www.givewell.org</a>
+</center>
+</section><section class="slide level2">
+
+<center>
+Organizations like ‘<a href="https://www.givewell.org">GiveWell</a>’ and ‘<a href="https://www.givewell.org">ImpactMatters</a>’ are promoting “impact, e.g., ‘lives saved/$’”
+</center>
+<p><br></p>
+<div class="fragment">
+<p><span class="math inline">\(\rightarrow\)</span> How will potential donors respond to this ‘analytical’ information?</p>
+</div>
+<div class="fragment">
+<p><font color='green'>Energise effective giving?</font> or <font color='blue'>Switch off empathy?</font></p>
+</div>
+<div class="fragment">
+<p><span class="math inline">\(\rightarrow\)</span> (How and when) should charities advertise their impact/$?</p>
+<!--`fwc("Puzzle:","blue")` inefficient giving/little to highest-impact causes
+
+- Conceptual breakdown of 'barriers'
+- 'Innumerate empathy': key barrier to promoting effective giving?
+  - Previous: emotional reactions to suffering $\rightarrow$ helping; but it "doesn't scale" with need (and few ppl 'research effectiveness before giving')
+
+- Dual process: *analytical* impact info may disrupt empathic giving
+
+-->
+</div>
+</section></section>
+<section id="outline" class="title-slide slide level1"><h1>Outline</h1><ol type="1">
+<li><p>The question</p></li>
+<li><p>What previous research suggests</p></li>
+</ol>
+<aside class="notes">
+<p><small></p>
+<ol type="1">
+<li>“How do people deal with impact/effectiveness info?, should you present it in solicitations?, why this is important”?</li>
+<li>(mixed results, some positive, lack of clear evidence) (7 experiments… CRS to be presented soon 6 with Robin Bergh Harvard)</li>
+</ol>
+<p>Hints at positive or null effects, little evidence of turn-off, worth further exploration</p>
+<p>I’d like work with you to run field experiments/trials through your standard platform, and to run trials with digital, social media, advertisements on your behalf, can co-finance with grants)</p>
+<p>Also see innovationsinfundraising.org and giveifyouwin page, other projects/trials I’d be interested in doing (time permitting) </small></p>
+</aside>
+<ol start="3" type="1">
+<li><p>What we’ve done and what we’ve found</p></li>
+<li><p>What we’d like to do</p></li>
+</ol>
+<div style="text-align: left; position: absolute; width: 300px; height: 46px; z-index: 4; left: 485px; top: 400px;" class="absolute-element">
+<ol start="5" type="1">
+<li>Other projects: InnovationsInFundraising.org, GiveIfYouWin.org
+</div></li>
+</ol></section>
+<section><section id="what-do-we-mean-by-impacteffectiveness" class="title-slide slide level1"><h1>What do we mean by ‘impact/effectiveness’?</h1><div id="left">
+<p><img src="makeawish-disney.jpg" width="140%" /></p>
+</div>
+<div id="right">
+<p><img src="bednets.jpg" width="140%" /></p>
+</div>
+<aside class="notes">
+<p>The <em>type</em> of output matters, because this measure cares about human (and environmental OUTCOMES).</p>
+<pre><code>&lt;/aside&gt; </code></pre></section><section id="section-1" class="slide level2">
+<h2></h2>
+<p><span class="math inline">\(B(G_i)\)</span>: Beneficial <em>outcome</em> <small>achieved by charity <span class="math inline">\(i\)</span></small> with total donations <span class="math inline">\(G_i\)</span></p>
+<p><br />
+</p>
+<div class="fragment">
+<p><font color='RawSienna'>ULTIMATE outcome</font></p>
+<ul>
+<li>Lives saved, quality-adjusted-life-years added, etc.</li>
+<li>Not <em>‘output’</em> – ‘nets provided’ nor ‘paintings purchased’</li>
+</ul>
+<p><br />
+</p>
+</div>
+<div class="fragment">
+<p>Actually, “output per $” <span class="math inline">\(\times\)</span> “impact per output”</p>
+<ul>
+<li>Actually, the <em>marginal impact</em> of each $ donated on this</li>
+</ul>
+</div>
+<div class="fragment">
+<p><small> … what GiveWell and ImpactMatters attempt to measure; Strong evidence that this varies greatly! </small></p>
+<aside class="notes">
+It’s the <em>product</em> of outputs and the impact of these.
+</aside>
+</div>
+</section><section id="this-kind-of-effectiveness-impact" class="slide level2">
+<h2>‘This kind of effectiveness’ (impact)</h2>
+<p>From GiveWell calculations:</p>
+<p><img src="givewell_calc_medians.png" width="140%" /></p>
+<aside class="notes">
+Givewell takes in data, makes specific detailed calculations, and reports a consensus measure of COST PER LIFE SAVED (and more)!
+</aside>
+</section><section id="section-2" class="slide level2">
+<h2></h2>
+<center>
+(NOT ‘this kind of effectiveness’)
+</center>
+<p><img src="cn_logo.png" width="25%" style="display: block; margin: auto;" /></p>
+<div id="left">
+<p><img src="cn_formulae.png" width="140%" /></p>
+</div>
+<div id="right">
+<p><img src="guidedogs_guidestar.png" width="140%" /></p>
+</div>
+<aside class="notes">
+<p>Overhead rate or fundraising is now widely seen to be a fairly uninformative measure of impact.</p>
+<p>Transparency and financial stability are good, but far from sufficient to have impact. I can be a squeaky-clean provider of an intervention that has no positive impact (guns for tots?)</p>
+</aside>
+</section><section id="section-3" class="slide level2" data-background="gunsfortots.jpg">
+<h2></h2>
+</section></section>
+<section id="theory-should-impact-drive-giving-or-shut-down-empathy" class="title-slide slide level1"><h1>Theory: should ‘impact’ drive giving or shut-down empathy?</h1>
+<div class="note">
+<small>
+<center>
+<p>Behavioral Economics idea/ideal: “impact-altruism”</p>
+<p>‘Innumerate empathy?’… cognitive biases, barriers to effectiveness</p>
+<p>‘Dual process’ - fast/slow thinking; ‘spontaneous generosity vs. deliberative self-interest?’</p>
+<p>Relational models … ‘market vs sharing norms’</p>
+<p>‘Motivated reasoning’, excuses not to give; double-edged</p>
+<p>‘Signaling’ empathy vs effectiveness</p>
+</center>
+<p></small></p>
+</div>
+<aside class="notes">
+<p>Effectiveness information might also help <em>remove</em> excuses</p>
+<p>A small share of charitable giving goes towards “highly-effective” charities as measured by GiveWell (or to charities in this category: health interventions in poor countries). <em>Innumerate empathy</em> may constitute a major barrier to (promoting) effective giving.</p>
+<p>Previous work finds that helping behaviors are strongly driven by emotional reactions to individual suffering, but these do not scale with the magnitude of need. From a dual-process perspective, presenting analytical impact information may even disrupt empathic giving, shifting potential donors towards a system-II deliberative mode.</p>
+</aside></section>
+<section><section id="the-evidence-prior-studies" class="title-slide slide level1"><h1>The evidence: prior studies</h1></section><section id="claim-better-to-portray-an-individual-child-than-convey-the-total-affected" class="slide level2">
+<h2>Claim: Better to portray an individual (child) than convey the total affected</h2>
+<center>
+<small> Small &amp; Loewenstein (03); Small et al (07); Kogut &amp; R (05) </small>
+</center>
+<p>Driven by System-1 empathy, switched off by analytic thinking</p>
+<p><br></p>
+<div class="fragment">
+<p><strong>Small, Lowenstein, Slovic (2007):</strong></p>
+<p>[Study 3] “individuals who faced an identifiable victim donated more…”</p>
+</div>
+<div class="fragment">
+<p><small> “…than those who faced victim statistics, p &lt; .01,” </small></p>
+</div>
+<div class="fragment">
+<p><small> …“than those who faced [both] an identifiable victim [and] statistics, p &lt; .05.” </small></p>
+<aside class="notes">
+<p><small> There is strong evidence that people offer more aid to specific, identifiable victims than anonymous, statistical victims (called the identified victim effect; see e.g., Kogut &amp; Ritov, 2005; Lee &amp; Feeley, 2016; Small, Loewenstein, &amp; Slovic, 2007).</p>
+“any money that you donate will go to Rokia [the identified victim]” </small>
+</aside>
+</div>
+</section><section class="slide level2">
+
+<p><strong>Small et al, ’07, Study 4</strong></p>
+<p><br></p>
+<blockquote>
+<p>Priming analytic thinking reduced donations to an identifiable victim relative to a feeling-based thinking prime.</p>
+</blockquote>
+<p><br></p>
+<div class="fragment">
+<blockquote>
+<p>Yet, the primes had no distinct effect on donations to statistical victims, which is symptomatic of the difficulty in generating feelings for these victims.</p>
+</blockquote>
+<p><br></p>
+<center>
+<small> <font color='blue'><em>Tightly bounded null, but … nonlinearity?</em></font> </small>
+</center>
+<aside class="notes">
+<p><small> latter non-effect appears tightly bounded; but this could simply be driven by nonlinearity. If people gave little to statistical victims, there is less room for this to decrease further. A classic problem when considering interactions.</p>
+<p></small></p>
+</aside>
+</div>
+</section><section id="ratings-and-information-in-general-mixed-evidence" class="slide level2">
+<h2>Ratings and information in general: mixed evidence</h2>
+<ul>
+<li><p>Yörük (2016, JEMS): RD w/ Charity Navigator; significant for ‘small’ charities only</p>
+<ul>
+<li>See also Brown ea (2017), Gordon ea (2009)</li>
+</ul></li>
+</ul>
+<aside class="notes">
+<ul>
+<li>Charity Navigator stars based on continuous score across categories (not EA criteria)</li>
+<li>Identification via RD: Impact of crossing a ‘star’ threshold on amounts raised <em>Results:</em> Significant impact for small charities only: finds a nearly 20% effect of a one star increase
+</aside></li>
+</ul>
+<aside class="notes">
+<p>re-check:</p>
+<blockquote>
+<p>…the evidence on the effects of impact information are more mixed, with mainly null effects <small> (Metzger &amp; G ’15; Karlan &amp; W, ’14; Baron &amp; S, ’10; Caviola ea ’14, Berman ea ’15) </small></p>
+</blockquote>
+</aside>
+</section><section id="parsons-2007" class="slide level2">
+<h2>Parsons (2007)</h2>
+<p><small> 2 x 2 mailing appeal for People with Aids Coalition-Houston </small></p>
+<ul>
+<li>Add “Service efforts and accomplishment info”(SEA)</li>
+<li>Add favorable “FINANCIAL” spending/overhead ratio info</li>
+</ul>
+<p><img src="parsons_fin_treat.png" width="60%" style="display: block; margin: auto;" /></p>
+</section><section class="slide level2">
+
+<p>FINANCIAL (alone) <span class="math inline">\(\rightarrow\)</span> 180% increase in odds of donating <em>among prior donors</em> (<span class="math inline">\(p&lt;0.05\)</span>)</p>
+<aside class="notes">
+(Other effects mainly insignificant, underpowered) Unsure if it’s a logit or LPM – confusing writing Not effect-coded; no measure of <em>overall</em> impact of FINANCIAL across both SEA treatments Probably not preregistered I’d like to see CI’s
+</aside>
+</section><section id="karlan-and-wood-2017" class="slide level2">
+<h2>Karlan and Wood (2017)</h2>
+<div id="left">
+<p><img src="ffh_sebastiana.png" width="140%" /></p>
+</div>
+<div id="right">
+<p><img src="karlan_wave2.png" width="140%" /></p>
+</div>
+</section><section class="slide level2">
+
+<p>Adding scientific impact to appeal (&amp; removing emotional text):</p>
+<div class="fragment">
+<p><span class="math inline">\(\rightarrow\)</span> little net effect</p>
+</div>
+<div class="fragment">
+<p><span class="math inline">\(\rightarrow\)</span> reduced (increased) giving among small (large) prior donors</p>
+<p><br></p>
+<center>
+<small> <font color='blue'><em>But some potential confounds…</em></font> </small>
+</center>
+<aside class="notes">
+<ul>
+<li>Yale/institution effect (seemed negative)</li>
+<li>Nature of ‘impact’ information (not exactly quantitative)</li>
+<li>ex-post splitting</li>
+<li>two things changed at once (impact in, emotional out)</li>
+</ul>
+</aside>
+</div>
+</section></section>
+<section><section id="berghreinsteindv-studies" class="title-slide slide level1"><h1>Bergh/Reinstein/DV studies</h1><center>
+7 giving experiments, various contexts
+</center></section><section id="berghreinsteindv-studies-1" class="slide level2">
+<h2>Bergh/Reinstein/DV studies</h2>
+<ul>
+<li><p>Actual charitable giving/asks</p></li>
+<li><p>Field and ‘M-Turk’ settings with realistic contexts</p></li>
+</ul>
+<div class="fragment">
+<p>2x2:</p>
+<ul>
+<li><p>Measures of charity efficiency/effectiveness</p></li>
+<li><p>Emotional-empathy-inducing images</p></li>
+</ul>
+</div>
+</section><section id="bergh-mturk-experiment" class="slide level2">
+<h2>Bergh project (Mturk)</h2>
+<p><img src="bergh_syria_examples.png" width="85%" style="display: block; margin: auto;" /></p>
+</section><section class="slide level2">
+
+<p><strong>Context</strong> (for studies 1-5)</p>
+<ul>
+<li>Amazon’s Mechanical-turk participants (Americans)</li>
+</ul>
+<p><small> <span class="math inline">\(\rightarrow\)</span> final sample sizes: 398, 614, 611, 608, and 433 in Studies 1-5 respectively (variation tracking design complexity) </small></p>
+<div class="fragment">
+<aside class="notes">
+<p>hit approval rating 98%+, 100 hits or less</p>
+<p>Some exclusions based on attention checks</p>
+The percentage of women varied between 57 and 60%, the median age across all studies was 29-30 years (SDs from 9.55 to 10.64)
+</aside>
+</div>
+<div class="fragment">
+<p><strong>Payments</strong>: $1.50 ($2 in s4) baseline, Bonuses: $3 in S1-S2, $5 in S5, Raffle: $50 (1:25 odds) in S3-S4</p>
+</div>
+<div class="fragment">
+<p><strong>Donation asks (from bonus) &amp; treatments:</strong> 1 charity (or 2 in same category): Syria relief, Polio</p>
+<aside class="notes">
+(Between-subject) Image &amp;/or information Commit (&amp; choose), select amount; vary ordering Baseline pay is $2 in study 4 because it’s longer
+</aside>
+</div>
+</section><section class="slide level2">
+
+<center>
+Bergh/Reinstein setups
+</center>
+<p><img src="dp_studies_matrix.png" width="84%" style="display: block; margin: auto;" /></p>
+</section><section class="slide level2">
+
+<center>
+Studies 1-3:
+</center>
+<p><img src="bergh-s1-3-designmatrix.png" width="80%" style="display: block; margin: auto;" /></p>
+</section><section class="slide level2">
+
+<center>
+Study 4:
+</center>
+<p><img src="bergh-s1-3-timings.png" width="95%" style="display: block; margin: auto;" /></p>
+</section><section class="slide level2">
+
+<center>
+Study 4
+</center>
+<p><img src="bergh-s4.png" width="85%" style="display: block; margin: auto;" /></p>
+</section><section id="bergh-results" class="slide level2">
+<h2>Bergh/Reinstein Results</h2>
+<p><img src="bergh_bars.png" width="80%" style="display: block; margin: auto;" /></p>
+</section><section class="slide level2">
+
+<p><strong>Overall:</strong></p>
+<p><br></p>
+<p>Strong positive effect of <em>images</em> on donation incidence, amounts</p>
+<p><br></p>
+<div class="fragment">
+<p>Little impact of effectiveness information on donation incidence, amounts</p>
+<ul>
+<li>“Fairly tightly-bounded null”</li>
+</ul>
+</div>
+</section><section class="slide level2">
+
+<p><img src="bergh_anova_meta.png" width="90%" style="display: block; margin: auto;" /></p>
+<aside class="notes">
+<p>Strong impact of image (at extensive and intensive margin; see regressions— OR CI [1.14, 1.60])</p>
+<p>Meta-analysis is simple pooling (fixed effects)</p>
+<p>Insignificant impact of information treatments in pooled regressions, but moderately significant negative impact on incidence.</p>
+</aside>
+</section></section>
+<section><section id="more-on-berghreinstein-essex" class="title-slide slide level1"><h1>More on Bergh/Reinstein, Essex</h1><center>
+<strong>(Study 6: field context)</strong>
+</center></section><section id="essex-context" class="slide level2">
+<h2>Essex context</h2>
+<p>Connected to EssexLab 2019 Omnibus online survey</p>
+<div class="fragment">
+<ul>
+<li><span class="math inline">\(\approx\)</span> 20 minutes, many psycho/demog/polit/econ questions, mostly unrelated to charity</li>
+</ul>
+</div>
+<div class="fragment">
+<ul>
+<li>Completion <span class="math inline">\(\rightarrow\)</span> raffle for 1 of 20 Amazon vouchers worth £50 each</li>
+</ul>
+</div>
+<div class="fragment">
+<ul>
+<li><p>Given information about blindness in general</p></li>
+<li><p>(Conditional) donation part</p></li>
+</ul>
+<aside class="notes">
+<p>Advantages over S1-5 (Mturk): Not a ‘donation experiment,’ real impact measures, distinct emotional simuli, choose between distinct <em>causes</em>, larger amounts, tied to rich Omnibus survey data</p>
+<p>Note these are the later/non-British-nationality participants in the Omnibus.</p>
+<p>The chances of winning are unknown to participants but could be inferred to be of magnitude of between 1/10 and 1/300. Ex post about 1/20.</p>
+</aside>
+</div>
+</section><section class="slide level2">
+
+<p><strong>The ‘last’ Omnibus questions just before this</strong></p>
+<p><img src="q_born_uk.png" width="50%" style="display: block; margin: auto;" /><img src="q_oth_ctrys.png" width="50%" style="display: block; margin: auto;" /><img src="q_birth_ctry.png" width="50%" style="display: block; margin: auto;" /><img src="q_fluent_eng.png" width="50%" style="display: block; margin: auto;" /><img src="q_other_langs.png" width="50%" style="display: block; margin: auto;" /></p>
+<aside class="notes">
+Some of these questions are conditionally included based on the earlier ones, for obvious reasons.
+</aside>
+</section><section class="slide level2">
+
+<p><strong>2 <span class="math inline">\(\times\)</span> 2, “balanced blocked randomisation”, “between-subject”: </strong></p>
+<ol type="1">
+<li class="fragment">Analytic information about ‘cost per outcome’ &amp; ‘cost per impact’</li>
+</ol>
+<p><br></p>
+<ol start="2" type="1">
+<li class="fragment">Empathy-inducing image: picture of blind girl (Yes/No)</li>
+</ol>
+<aside class="notes">
+Also block randomize the order the charities are presented; need to examine this or control for it. And blocking balances especially across previous unrelated variation (Pat’s treatment).
+</aside>
+</section><section class="slide level2">
+
+<h3 id="introduction-screen-all">Introduction screen (all)</h3>
+<p><img src="intro_prize_blind.png" width="90%" style="display: block; margin: auto;" /></p>
+</section><section class="slide level2">
+
+<h3 id="image-treatment-half-of-participants">Image treatment (Half of participants)</h3>
+<p><img src="blind_image.png" width="75%" style="display: block; margin: auto;" /></p>
+</section><section class="slide level2">
+
+<p><strong>Control: description, choice</strong> (1/2 of subjects)</p>
+<p><img src="info_no_eff.png" width="60%" style="display: block; margin: auto;" /><img src="char_chc.png" width="60%" style="display: block; margin: auto;" /></p>
+<aside class="notes">
+Remember, 1/2 of these have charity order reversed
+</aside>
+</section><section class="slide level2">
+
+<p><strong>Info-treatment: description, choice</strong> (1/2 of subjects)</p>
+<p><img src="descr_chars_eff_inf.png" width="55%" style="display: block; margin: auto;" /><img src="char_chc.png" width="55%" style="display: block; margin: auto;" /></p>
+<aside class="notes">
+Remember, 1/2 of these have charity order reversed
+</aside>
+</section><section class="slide level2">
+
+<h3 id="donation-amount-choices">Donation amount choices</h3>
+<center>
+<img data-src="don_slider.png" alt="Donation slider" style="width:80.0%" />
+</center>
+</section><section class="slide level2">
+
+<center>
+<img data-src="don_slider_33.png" alt="Donation slider" style="width:80.0%" />
+</center>
+</section><section id="results" class="slide level2">
+<h2>Results</h2>
+<p><font color='grey'>Limited power to detect differences in amounts donated or incidence by treatment</font></p>
+<p><br></p>
+<p>Image <em>reduced</em> donation (incidence and amounts) to Guide Dogs (fairly strong and significant effect)</p>
+<p><font color='grey'>And ‘increased’ donations to River Blindness, but not statistically significantly)</font></p>
+</section><section class="slide level2">
+
+<h3 id="levels">Levels</h3>
+<center>
+Histogram: by image treatment
+</center>
+<pre><code>## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.</code></pre>
+<p><img src="DV_impact_present_files/figure-revealjs/hist_by_image_don-1.png" width="75%" style="display: block; margin: auto;" /></p>
+</section><section class="slide level2">
+
+<center>
+Histogram: by information treatment
+</center>
+<pre><code>## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.</code></pre>
+<p><img src="DV_impact_present_files/figure-revealjs/sx_dp_hist-1.png" width="65%" style="display: block; margin: auto;" /></p>
+</section><section id="section-4" class="slide level2">
+<h2>—-</h2>
+<h3 id="donation-incidence">Donation incidence</h3>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th>
+treat_image
+</th>
+<th>
+treat_eff_info
+</th>
+<th>
+donated
+</th>
+<th>
+don_gd
+</th>
+<th>
+don_river
+</th>
+<th>
+n
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Image
+</td>
+<td>
+Info
+</td>
+<td>
+0.537
+</td>
+<td>
+0.168
+</td>
+<td>
+0.368
+</td>
+<td>
+95
+</td>
+</tr>
+<tr>
+<td>
+Image
+</td>
+<td>
+No info
+</td>
+<td>
+0.505
+</td>
+<td>
+0.147
+</td>
+<td>
+0.358
+</td>
+<td>
+95
+</td>
+</tr>
+<tr>
+<td>
+No image
+</td>
+<td>
+Info
+</td>
+<td>
+0.511
+</td>
+<td>
+0.213
+</td>
+<td>
+0.298
+</td>
+<td>
+94
+</td>
+</tr>
+<tr>
+<td>
+No image
+</td>
+<td>
+No info
+</td>
+<td>
+0.532
+</td>
+<td>
+0.245
+</td>
+<td>
+0.287
+</td>
+<td>
+94
+</td>
+</tr>
+</tbody>
+</table>
+<p>Fisher tests: <em>some</em> donation</p>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th>
+estimate
+</th>
+<th>
+p.value
+</th>
+<th>
+conf.low
+</th>
+<th>
+conf.high
+</th>
+<th>
+method
+</th>
+<th>
+alternative
+</th>
+<th>
+Experiment
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+0.919
+</td>
+<td>
+0.884
+</td>
+<td>
+0.498
+</td>
+<td>
+1.69
+</td>
+<td>
+Fisher
+</td>
+<td>
+two.sided
+</td>
+<td>
+Effectiveness vs control
+</td>
+</tr>
+<tr>
+<td>
+1.134
+</td>
+<td>
+0.772
+</td>
+<td>
+0.617
+</td>
+<td>
+2.09
+</td>
+<td>
+Fisher
+</td>
+<td>
+two.sided
+</td>
+<td>
+Effectiveness| Image present
+</td>
+</tr>
+<tr>
+<td>
+1.021
+</td>
+<td>
+1.000
+</td>
+<td>
+0.669
+</td>
+<td>
+1.56
+</td>
+<td>
+Fisher
+</td>
+<td>
+two.sided
+</td>
+<td>
+Effectiveness (pooled)
+</td>
+</tr>
+</tbody>
+</table>
+</section><section class="slide level2">
+
+<p><small> Donation incidence </small></p>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th>
+treat_image
+</th>
+<th>
+treat_eff_info
+</th>
+<th>
+donated
+</th>
+<th>
+don_gd
+</th>
+<th>
+don_river
+</th>
+<th>
+n
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Image
+</td>
+<td>
+Info
+</td>
+<td>
+0.537
+</td>
+<td>
+0.168
+</td>
+<td>
+0.368
+</td>
+<td>
+95
+</td>
+</tr>
+<tr>
+<td>
+Image
+</td>
+<td>
+No info
+</td>
+<td>
+0.505
+</td>
+<td>
+0.147
+</td>
+<td>
+0.358
+</td>
+<td>
+95
+</td>
+</tr>
+<tr>
+<td>
+No image
+</td>
+<td>
+Info
+</td>
+<td>
+0.511
+</td>
+<td>
+0.213
+</td>
+<td>
+0.298
+</td>
+<td>
+94
+</td>
+</tr>
+<tr>
+<td>
+No image
+</td>
+<td>
+No info
+</td>
+<td>
+0.532
+</td>
+<td>
+0.245
+</td>
+<td>
+0.287
+</td>
+<td>
+94
+</td>
+</tr>
+</tbody>
+</table>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th>
+estimate
+</th>
+<th>
+p.value
+</th>
+<th>
+conf.low
+</th>
+<th>
+conf.high
+</th>
+<th>
+method
+</th>
+<th>
+alternative
+</th>
+<th>
+Experiment
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+1.05
+</td>
+<td>
+0.91
+</td>
+<td>
+0.67
+</td>
+<td>
+1.6
+</td>
+<td>
+Fisher
+</td>
+<td>
+two.sided
+</td>
+<td>
+Effectiveness: RB
+</td>
+</tr>
+<tr>
+<td>
+0.97
+</td>
+<td>
+1.00
+</td>
+<td>
+0.56
+</td>
+<td>
+1.7
+</td>
+<td>
+Fisher
+</td>
+<td>
+two.sided
+</td>
+<td>
+Effectiveness: GD
+</td>
+</tr>
+<tr>
+<td>
+1.38
+</td>
+<td>
+0.16
+</td>
+<td>
+0.88
+</td>
+<td>
+2.2
+</td>
+<td>
+Fisher
+</td>
+<td>
+two.sided
+</td>
+<td>
+Image: RB
+</td>
+</tr>
+<tr>
+<td>
+0.63
+</td>
+<td>
+0.09
+</td>
+<td>
+0.36
+</td>
+<td>
+1.1
+</td>
+<td>
+Fisher
+</td>
+<td>
+two.sided
+</td>
+<td>
+Image: GD
+</td>
+</tr>
+</tbody>
+</table>
+<p><small> Fisher tests: donated to Guide dogs/River blindness </small></p>
+</section><section id="simple-tests" class="slide level2">
+<h2>Simple tests</h2>
+<p><img src="DV_impact_present_files/figure-revealjs/BoxPlots_dp_image-1.png" width="65%" style="display: block; margin: auto;" /></p>
+</section><section class="slide level2">
+
+<p><img src="DV_impact_present_files/figure-revealjs/BoxPlots_dp_info-1.png" width="65%" style="display: block; margin: auto;" /></p>
+</section><section class="slide level2">
+
+<h3 id="by-treatment-combination">By treatment combination</h3>
+<p><img src="DV_impact_present_files/figure-revealjs/BoxPlots_dp-1.png" width="768" /></p>
+</section><section class="slide level2">
+
+<h3 id="by-charity-by-treatment-combination">By charity, by treatment (combination)</h3>
+<center>
+<small> Donations to Guide Dogs by treatment combination </small>
+</center>
+<p><img src="DV_impact_present_files/figure-revealjs/boxplotsgd_p-1.png" width="768" /></p>
+</section><section class="slide level2">
+
+<center>
+Donations to River Blindness by treatment combination
+</center>
+<p><img src="DV_impact_present_files/figure-revealjs/boxplotsrb_p-1.png" width="768" /></p>
+</section></section>
+<section><section id="donor-voice-trial" class="title-slide slide level1"><h1>Donor Voice trial</h1><p>Presentation coming up soon.</p></section><section id="donor-voice-trial-1" class="slide level2">
+<h2>Donor Voice trial</h2>
+<p><em>Spoiler warning:</em></p>
+<div class="fragment">
+<p><font color='orange'>Some positive effect of impact-related information</font></p>
+</div>
+</section></section>
+<section><section id="sum-up" class="title-slide slide level1"><h1>Sum up</h1></section><section id="early-take-aways-dont-fear-the-info" class="slide level2">
+<h2>Early take-aways: Don’t fear the info</h2>
+<p><font color='purple'>“Images work”</font></p>
+<p><small> Image treatments can be effective at motivating giving, including <em>impactful, efficient</em> giving </small></p>
+<p><br></p>
+<div class="fragment">
+<p><font color='ForestGreen'>“Info does not hurt, may help”</font></p>
+<p>Analytic information about impact:</p>
+</div>
+<div class="fragment">
+<div>
+<ul>
+<li class="fragment"><p>Does not seem to (strongly) decrease donations</p></li>
+<li class="fragment"><p>May increase donations in some cases (Donor’s voice mailing; Karlan &amp; W, Parsons work)</p></li>
+<li class="fragment"><p>Mixed evidence on ‘efficiency info dampening the impact of identified victim images’</p></li>
+</ul>
+</div>
+</div>
+<div class="fragment">
+<p><span class="math inline">\(\rightarrow\)</span> this may not be a ‘major barrier’ to promoting effective giving</p>
+<p></small> Caveats: More power needed, cannot rule out substantial effects </small></p>
+</div>
+</section><section id="future-work-with-you" class="slide level2">
+<h2>Future work (with you?)</h2>
+<center>
+Larger-scale field trials examining responses to real impact-per-$ information, in various presentations
+</center>
+<p><br></p>
+<div class="fragment">
+<p>Through your standard platforms</p>
+</div>
+<div class="fragment">
+<p>Digital, social-media, advertisements on your behalf</p>
+</div>
+<div class="fragment">
+<ul>
+<li>(co)-financed with our research grants!</li>
+</ul>
+<aside class="notes">
+<ul>
+<li>Followup with religious-affiliated charity</li>
+<li>Integrate motivated reasoning/excuse-driven</li>
+<li>Meta-analyses and systematic review including our own and others’ work</li>
+</ul>
+</aside>
+</div>
+</section><section id="section-5" class="slide level2" data-background-iframe="Innovations in Fundraising Wiki [Innovations in Fundraising].html">
+<h2></h2>
+<small>
+<center>
+<a href="innovationsinfundraising.org">innovationsinfundraising.org</a>
+</center>
+<p></small></p>
+<div class="absolute-element" style="text-align: right; position: absolute; width: 300px; height: 46px; z-index: 4; left: 600px; top: 550px;">
+<p><small>Connect and communicate between and among researchers, practitioners and supporters. Curate, organize, and evaluate the <em>rigorous</em> evidence on ‘what works’. </small></p>
+</div>
+</section><section id="section-6" class="slide level2" data-background-iframe="Tools for Motivating Effective Charitable Giving [Innovations in Fundraising].html">
+<h2></h2>
+<center>
+<a href="innovationsinfundraising.org">innovationsinfundraising.org</a>
+</center>
+</section><section id="section-7" class="slide level2" data-background-iframe="http://giveifyouwin.org/">
+<h2></h2>
+<center>
+<a href="http://giveifyouwin.org/">giveifyouwin.org</a>
+</center>
+<div class="absolute-element" style="text-align: right; position: absolute; width: 300px; height: 46px; z-index: 4; left: 600px; top: 550px;">
+<p><small>‘Give if you win’: a new way to promote giving.</small></p>
+</div>
+</section></section>
+    </div>
+  </div>
+
+  <script src="DV_impact_present_files/reveal.js-3.3.0.1/lib/js/head.min.js"></script>
+  <script src="DV_impact_present_files/reveal.js-3.3.0.1/js/reveal.js"></script>
+
+  <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        // Push each slide change to the browser history
+        history: true,
+        // Vertical centering of slides
+        center: true,
+        // Transition style
+        transition: 'fade', // none/fade/slide/convex/concave/zoom
+        // Transition style for full page slide backgrounds
+        backgroundTransition: 'default', // none/fade/slide/convex/concave/zoom
+
+
+
+        chalkboard: {
+        },
+
+        keyboard: {
+          67: function() { RevealChalkboard.toggleNotesCanvas() },    // toggle notes canvas when 'c' is pressed
+          66: function() { RevealChalkboard.toggleChalkboard() }, // toggle chalkboard when 'b' is pressed
+          46: function() { RevealChalkboard.clear() },    // clear chalkboard when 'DEL' is pressed
+           8: function() { RevealChalkboard.reset() },    // reset chalkboard data on current slide when 'BACKSPACE' is pressed
+          68: function() { RevealChalkboard.download() }, // downlad recorded chalkboard drawing when 'd' is pressed
+        },
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: 'DV_impact_present_files/reveal.js-3.3.0.1/plugin/notes/notes.js', async: true },
+          { src: 'DV_impact_present_files/reveal.js-3.3.0.1/plugin/zoom-js/zoom.js', async: true },
+          { src: 'DV_impact_present_files/reveal.js-3.3.0.1/plugin/chalkboard/chalkboard.js', async: true },
+        ]
+      });
+    </script>
+  <!-- dynamically load mathjax for compatibility with self-contained -->
+  <script>
+    (function () {
+      var script = document.createElement("script");
+      script.type = "text/javascript";
+      script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+      document.getElementsByTagName("head")[0].appendChild(script);
+    })();
+  </script>
+
+<script>
+  (function() {
+    if (window.jQuery) {
+      Reveal.addEventListener( 'slidechanged', function(event) {  
+        window.jQuery(event.previousSlide).trigger('hidden');
+        window.jQuery(event.currentSlide).trigger('shown');
+      });
+    }
+  })();
+</script>
+
+
+  </body>
+</html>
